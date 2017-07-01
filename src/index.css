@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+.square{
+  background: #fff;
+  border:1px solid #999;
+  height:34px;
+  float:left;
+  text-align:center;
+  width:34px;
+}
+.square:focus{
+  outline:none;
+}
+.board-row:after{
+  clear:both;
+  content:'';
+  display:table;
+}
+.game{
+  display:flex;
+  flex-direction: column;
+}
