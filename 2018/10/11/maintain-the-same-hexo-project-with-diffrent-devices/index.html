@@ -14,7 +14,7 @@
 <meta property="og:site_name" content="a house in the woods">
 <meta property="og:description" content="初步不合理的尝试这个问题来自于今天在公司我尝试使用 hexo 去生成个人博客，hexo 的 deploy 只会生成页面 build 好的文件并推送到远程仓库，这样远程仓库就没有 hexo 项目的 source 了。因此，回家以后就没有项目的文件进行下一步的维护。只好重新创建一次项目，并推送远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。于是我凭着直觉和对 git 微薄的认知，进行了一下两">
 <meta property="og:locale" content="zh">
-<meta property="og:updated_time" content="2018-10-11T15:36:20.683Z">
+<meta property="og:updated_time" content="2018-10-11T15:57:08.291Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="使用不用终端维护同一个hexo博客">
 <meta name="twitter:description" content="初步不合理的尝试这个问题来自于今天在公司我尝试使用 hexo 去生成个人博客，hexo 的 deploy 只会生成页面 build 好的文件并推送到远程仓库，这样远程仓库就没有 hexo 项目的 source 了。因此，回家以后就没有项目的文件进行下一步的维护。只好重新创建一次项目，并推送远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。于是我凭着直觉和对 git 微薄的认知，进行了一下两">
@@ -87,29 +87,35 @@
     <div class="article-entry" itemprop="articleBody">
       
         <h3 id="初步不合理的尝试"><a href="#初步不合理的尝试" class="headerlink" title="初步不合理的尝试"></a>初步不合理的尝试</h3><p>这个问题来自于今天在公司我尝试使用 hexo 去生成个人博客，hexo 的 deploy 只会生成页面 build 好的文件并推送到远程仓库，<br>这样远程仓库就没有 hexo 项目的 source 了。因此，回家以后就没有项目的文件进行下一步的维护。只好重新创建一次项目，并推送<br>远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。<br>于是我凭着直觉和对 git 微薄的认知，进行了一下两次不同的错误尝试。</p>
-<h3 id="尝试一："><a href="#尝试一：" class="headerlink" title="尝试一："></a>尝试一：</h3><ol>
-<li><code>bash git clone github</code> 的 repo</li>
-<li><code>bash git checkout -b</code> hexo 创建并切换到 hexo 分支上</li>
-<li><code>bash hexo init</code> 初始化 hexo 项目，然后问题来了，hexo 提示需要当前文件夹是一个空文件夹，只能把所有文件夹的都删，包括.git 文件夹。<br>这样一来就相当于重头来过</li>
-</ol>
-<h4 id="尝试二"><a href="#尝试二" class="headerlink" title="尝试二:"></a>尝试二:</h4><ol>
-<li>既然需要一个空文件夹，那么就从刚才的空文件夹开始 <code>bash hexo init</code></li>
-<li><code>bash git checkout -b hexo</code> 创建并切换到 hexo 分支上</li>
-<li><code>bash git remote add origin git@github.com:Sociosarbis/study-memo.git</code>, 自觉这一步是会关联所有的本地分支和远程分支<br><strong><em>其实只是相当于给仓库地址创建了一个 shortname，例如上面的 origin 代表了 <a href="mailto:git@github.com" target="_blank" rel="noopener">git@github.com</a>:Sociosarbis/study-memo.git 的地址</em></strong></li>
-<li>直接 <code>bash git push origin/hexo</code>,然后提示远程并没有这个仓库</li>
-<li>好吧，既然这样就手动在 github 上创建 hexo 的分支，但是这个分支完完全全是 master 的复制</li>
-<li>创建完以后再尝试 push，然后提示需要 pull 一次</li>
-<li>然后直接 <code>bash git pull</code>，错误提示没有指定需要从哪个远程分支 pull</li>
-<li>那我就用这个命令把两个分支关联起来 <code>bash git branch --set-upstream-to=origin/hexo hexo</code>，然后再 pull 一次<br>再次错误提示 <code>bash refusing to merge unrelated histories</code></li>
-<li>网上 search 过后在 <code>bash git pull</code> 后面加上 <code>bash --allow-unrelated-histories</code>，终于 pull 成功了</li>
-<li>接下来就是我比较熟悉的过程了，删除 pull 下来的生成的页面文件，commit 以后再 push 上去，成功解决</li>
-</ol>
+<h3 id="尝试一："><a href="#尝试一：" class="headerlink" title="尝试一："></a>尝试一：</h3><p><strong>1.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> git@github.com:Sociosarbis/study-memo.git</span><br></pre></td></tr></table></figure>
+<p><strong>2.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b hexo</span><br></pre></td></tr></table></figure>
+<p><strong>3.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+<p>初始化 hexo 项目，然后问题来了，hexo 提示需要当前文件夹是一个空文件夹，只能把所有文件夹的都删，包括.git 文件夹。<br>这样一来就相当于重头来过</p>
+<h4 id="尝试二"><a href="#尝试二" class="headerlink" title="尝试二:"></a>尝试二:</h4><p><strong>1.</strong> 既然需要一个空文件夹，那么就从刚才的空文件夹开始</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+<p><strong>2.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b hexo</span><br></pre></td></tr></table></figure>
+<p><strong>3.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add origin git@github.com:Sociosarbis/study-memo.git</span><br></pre></td></tr></table></figure>
+<p>自觉这一步是会关联所有的本地分支和远程分支的，<br><strong><em>但其实只是相当于给仓库地址创建了一个 shortname，例如上面的 origin 代表了 <a href="mailto:git@github.com" target="_blank" rel="noopener">git@github.com</a>:Sociosarbis/study-memo.git 的地址</em></strong></p>
+<p><strong>4.</strong> 直接<code>git push origin/hexo</code>然后提示远程并没有这个仓库</p>
+<p><strong>5.</strong> 好吧，既然这样就手动在 github 上创建 hexo 的分支，但是这个分支完完全全是 master 的复制<br><strong>6.</strong> 创建完以后再尝试 push，然后提示需要 pull 一次<br><strong>7.</strong> 然后直接<code>git pull</code>，错误提示没有指定需要从哪个远程分支 pull</p>
+<p><strong>8.</strong> 那我就用这个命令把两个分支关联起来</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch --<span class="built_in">set</span>-upstream-to=origin/hexo hexo</span><br></pre></td></tr></table></figure>
+<p>然后再<code>git pull</code>一次再次错误提示<code>refusing to merge unrelated histories</code></p>
+<p><strong>9.</strong> 网上 search 过后在<code>git pull</code>后面加上<code>--allow-unrelated-histories</code>，终于 pull 成功了</p>
+<p><strong>10.</strong> 接下来就是我比较熟悉的过程了，删除 pull 下来的生成的页面文件，commit 以后再 push 上去，成功解决</p>
 <h3 id="正确做法"><a href="#正确做法" class="headerlink" title="正确做法"></a>正确做法</h3><p>虽然最后成功完成了任务，但是这样明显是不够优雅的。<br>再去网上查找，找到了两个能很好地解决这次问题的或者说关于本地与远程仓库关联的两个命令。</p>
 <p><strong>分别是</strong>:</p>
-<ol>
-<li><code>bash git push --set-upstream origin branch_name</code><br>在远程创建一个与本地 branch_name 分支同名的分支并跟踪</li>
-<li><code>git checkout --track orgin/branch_name</code><br>在本地创建一个与 branch_name 同名分支跟踪远程分支</li>
-</ol>
+<p><strong>1.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push --<span class="built_in">set</span>-upstream origin branch_name</span><br></pre></td></tr></table></figure>
+<p>在远程创建一个与本地 branch_name 分支同名的分支并跟踪</p>
+<p><strong>2.</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout --track orgin/branch_name</span><br></pre></td></tr></table></figure>
+<p>在本地创建一个与 branch_name 同名分支跟踪远程分支</p>
 
       
     </div>
