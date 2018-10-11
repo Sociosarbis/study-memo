@@ -9,14 +9,14 @@ title: 使用不用终端维护同一个hexo博客
 远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。
 于是我凭着直觉和对 git 微薄的认知，进行了一下两次不同的错误尝试。
 
-###尝试一：
+### 尝试一：
 
 1. `bash git clone github` 的 repo
 2. `bash git checkout -b` hexo 创建并切换到 hexo 分支上
 3. `bash hexo init` 初始化 hexo 项目，然后问题来了，hexo 提示需要当前文件夹是一个空文件夹，只能把所有文件夹的都删，包括.git 文件夹。
    这样一来就相当于重头来过
 
-####尝试二:
+#### 尝试二:
 
 1. 既然需要一个空文件夹，那么就从刚才的空文件夹开始 `bash hexo init`
 2. `bash git checkout -b hexo` 创建并切换到 hexo 分支上
