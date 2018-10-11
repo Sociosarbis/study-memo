@@ -85,14 +85,12 @@
     <div class="article-entry" itemprop="articleBody">
       
         <h3 id="初步不合理的尝试"><a href="#初步不合理的尝试" class="headerlink" title="初步不合理的尝试"></a>初步不合理的尝试</h3><p>这个问题来自于今天在公司我尝试使用 hexo 去生成个人博客，hexo 的 deploy 只会生成页面 build 好的文件并推送到远程仓库，<br>这样远程仓库就没有 hexo 项目的 source 了。因此，回家以后就没有项目的文件进行下一步的维护。只好重新创建一次项目，并推送<br>远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。<br>于是我凭着直觉和对 git 微薄的认知，进行了一下两次不同的错误尝试。</p>
-<p>###尝试一：</p>
-<ol>
+<h3 id="尝试一："><a href="#尝试一：" class="headerlink" title="尝试一："></a>尝试一：</h3><ol>
 <li><code>bash git clone github</code> 的 repo</li>
 <li><code>bash git checkout -b</code> hexo 创建并切换到 hexo 分支上</li>
 <li><code>bash hexo init</code> 初始化 hexo 项目，然后问题来了，hexo 提示需要当前文件夹是一个空文件夹，只能把所有文件夹的都删，包括.git 文件夹。<br>这样一来就相当于重头来过</li>
 </ol>
-<p>####尝试二:</p>
-<ol>
+<h4 id="尝试二"><a href="#尝试二" class="headerlink" title="尝试二:"></a>尝试二:</h4><ol>
 <li>既然需要一个空文件夹，那么就从刚才的空文件夹开始 <code>bash hexo init</code></li>
 <li><code>bash git checkout -b hexo</code> 创建并切换到 hexo 分支上</li>
 <li><code>bash git remote add origin git@github.com:Sociosarbis/study-memo.git</code>, 自觉这一步是会关联所有的本地分支和远程分支<br><strong><em>其实只是相当于给仓库地址创建了一个 shortname，例如上面的 origin 代表了 <a href="mailto:git@github.com" target="_blank" rel="noopener">git@github.com</a>:Sociosarbis/study-memo.git 的地址</em></strong></li>
