@@ -1,3 +1,9 @@
+---
+title: 探索抽象语法树
+tags:
+  - AST
+---
+
 **源起:**
 前段时间通过一篇关于开发者他介绍自己开发的 web 应用的文章知道了这名开发者。觉得他很厉害，要向他学习。所以呢，就学习一下他之前做过的项目。虽然是想认真研究完的，一来是代码没有什么注释，二来我认真看过的部分某些其实可参考意义不是很大。所以这个计划的执行就暂停了。不过呢，在其中我也找到了一个我想了解的方向，就是 AST（抽象语法树），这个其实会挺有用的。
 原因我暂时想到的有两点:
@@ -22,22 +28,22 @@ module.exports = function({ types: t }) {
       // 另一个是用于缓存遍历数据的参数state
       // 便于用户在访问节点时存储自己需要的信息
       CallExpression(path, state) {
-        const callee = path.get("callee"); 
+        const callee = path.get("callee");
         // NodePath通过get方法，获得对应的子Path，注意返回的也是一个NodePath的对象，并非是节点本身
         // Node可以通过NodePath.node获取，NodePath除了存储当前的Node以外,还保存节点的层级结构
         // 如通过Path.getSibling(index) 获取nth的当前层级的NodePath;
         // path.parentPath 获父NodePath
         // 另外所有替换删除的操作都是在NodePath上进行
-        
+
         // NodePath有一系列is开头的方法，用于确认Path是否为某种类型
-        if (!callee.isMemberExpression()) return; 
+        if (!callee.isMemberExpression()) return;
 
         if (isIncludedConsole(callee, state.opts.exclude)) {
           // console.log()
           if (path.parentPath.isExpressionStatement()) {
             path.remove(); // 删除Path
           } else {
-            path.replaceWith(createVoid0()); 
+            path.replaceWith(createVoid0());
             // 用一个新的NodePath代替原来的NodePath
             // NodePath一般用上面的types参数以types.UnaryExpression等
             // types后接NodePath type的构造方法创建
@@ -81,6 +87,6 @@ module.exports = function({ types: t }) {
   }
   //ps: 一个小的发现在visitor函数中this等于参数state
 ```
+
 **结语：**
-  我这里写的只是AST的冰山一粒，上述内容其实在babel handbook上都有，把自己心得体会记录下来，一是要是以后忘记了，看自己的文字更加容易唤醒自己的记忆，二是为自己的学习留下痕迹，再者有新的发现再到新文章中再叙吧。
- 
+我这里写的只是 AST 的冰山一粒，上述内容其实在 babel handbook 上都有，把自己心得体会记录下来，一是要是以后忘记了，看自己的文字更加容易唤醒自己的记忆，二是为自己的学习留下痕迹，再者有新的发现再到新文章中再叙吧。
