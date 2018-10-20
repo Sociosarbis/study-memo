@@ -72,18 +72,30 @@
   <div class="article-inner">
     
     
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2018/10/20/ast-exploration/">探索抽象语法树</a>
+    </h1>
+  
+
+      </header>
+    
     <div class="article-entry" itemprop="articleBody">
       
         <p><strong>源起:</strong><br>前段时间通过一篇关于开发者他介绍自己开发的 web 应用的文章知道了这名开发者。觉得他很厉害，要向他学习。所以呢，就学习一下他之前做过的项目。虽然是想认真研究完的，一来是代码没有什么注释，二来我认真看过的部分某些其实可参考意义不是很大。所以这个计划的执行就暂停了。不过呢，在其中我也找到了一个我想了解的方向，就是 AST（抽象语法树），这个其实会挺有用的。<br>原因我暂时想到的有两点:<br>一、通过解析代码，能够拿到代码结构化的信息，这样可以应用于一些代码自动化生成，解析模块依赖等（这种可以自动化的东西就是我辈所向往的）<br>二、单纯自己通过正则去实现这样的解析还是一个比较麻烦的工程，暂时非自己能力所及。<br><strong>实践:</strong><br>JS 的 AST 的解析主要会用到 Babel 这个库。其中需要了解到的主要有这三个个包@babel/parser(babylon)、@babel/traverse、@babel/type。<br>下面以官方的一个插件说明 AST 中的一些概念和使用流程:</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 以下为babel-plugin-transform-remove-console的部分源码</span></span><br><span class="line"><span class="comment">    插件export的是一个接收当前babel对象的函数，这里他取这个对象的types属性，这个types属性出自于@babel/types，</span></span><br><span class="line"><span class="comment">    在这里用于创建AST节点替换原来的节点。</span></span><br><span class="line"><span class="comment">    函数返回一个对象，对象比较重要的属性是visitor。用来定义当遍历访问到某类节点时，需要进行的用户自定义的操作。</span></span><br><span class="line"><span class="comment">    节点的类型可以很简单地在AST Explorer中书写代码，通过显示的解析后的AST树中获知。</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="built_in">module</span>.exports = <span class="function"><span class="keyword">function</span>(<span class="params">&#123; types: t &#125;</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    name: <span class="string">"transform-remove-console"</span>,</span><br><span class="line">    visitor: &#123;</span><br><span class="line">      <span class="comment">// CallExpression表示函数调用，这些vistor的函数接收两个参数第一个是NodePath的对象</span></span><br><span class="line">      <span class="comment">// 另一个是用于缓存遍历数据的参数state</span></span><br><span class="line">      <span class="comment">// 便于用户在访问节点时存储自己需要的信息</span></span><br><span class="line">      CallExpression(path, state) &#123;</span><br><span class="line">        <span class="keyword">const</span> callee = path.get(<span class="string">"callee"</span>); </span><br><span class="line">        <span class="comment">// NodePath通过get方法，获得对应的子Path，注意返回的也是一个NodePath的对象，并非是节点本身</span></span><br><span class="line">        <span class="comment">// Node可以通过NodePath.node获取，NodePath除了存储当前的Node以外,还保存节点的层级结构</span></span><br><span class="line">        <span class="comment">// 如通过Path.getSibling(index) 获取nth的当前层级的NodePath;</span></span><br><span class="line">        <span class="comment">// path.parentPath 获父NodePath</span></span><br><span class="line">        <span class="comment">// 另外所有替换删除的操作都是在NodePath上进行</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">// NodePath有一系列is开头的方法，用于确认Path是否为某种类型</span></span><br><span class="line">        <span class="keyword">if</span> (!callee.isMemberExpression()) <span class="keyword">return</span>; </span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (isIncludedConsole(callee, state.opts.exclude)) &#123;</span><br><span class="line">          <span class="comment">// console.log()</span></span><br><span class="line">          <span class="keyword">if</span> (path.parentPath.isExpressionStatement()) &#123;</span><br><span class="line">            path.remove(); <span class="comment">// 删除Path</span></span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            path.replaceWith(createVoid0()); </span><br><span class="line">            <span class="comment">// 用一个新的NodePath代替原来的NodePath</span></span><br><span class="line">            <span class="comment">// NodePath一般用上面的types参数以types.UnaryExpression等</span></span><br><span class="line">            <span class="comment">// types后接NodePath type的构造方法创建</span></span><br><span class="line">            <span class="comment">// 如这里的createVoid0就是以types.UnaryExpression('void', [0])构造的</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (isIncludedConsoleBind(callee, state.opts.exclude)) &#123;</span><br><span class="line">          <span class="comment">// console.log.bind()</span></span><br><span class="line">          path.replaceWith(createNoop());</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      MemberExpression: &#123;</span><br><span class="line">        <span class="comment">// 访问节点有两个阶段一个是enter、一个exit，默认是enter</span></span><br><span class="line">        <span class="comment">// 访问结束发生该节点下的子节点遍历完返回时</span></span><br><span class="line">        exit(path, state) &#123;</span><br><span class="line">          <span class="keyword">if</span> (</span><br><span class="line">            isIncludedConsole(path, state.opts.exclude) &amp;&amp;</span><br><span class="line">            !path.parentPath.isMemberExpression()</span><br><span class="line">          ) &#123;</span><br><span class="line">            <span class="keyword">if</span> (</span><br><span class="line">              path.parentPath.isAssignmentExpression() &amp;&amp;</span><br><span class="line">              path.parentKey === <span class="string">"left"</span></span><br><span class="line">            ) &#123;</span><br><span class="line">              path.parentPath.get(<span class="string">"right"</span>).replaceWith(createNoop());</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">              path.replaceWith(createNoop());</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="comment">// 值得一提的是在这个插件加了一个验证console是否为全局的操作</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">isGlobalConsoleId</span>(<span class="params">id</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> name = <span class="string">"console"</span>;</span><br><span class="line">    <span class="comment">// 首先通过scope.getBinding确认console是否是为用户定义的，其次再验证在全局作用域中是否有console定义</span></span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">      id.isIdentifier(&#123; name &#125;) &amp;&amp;</span><br><span class="line">      !id.scope.getBinding(name) &amp;&amp;</span><br><span class="line">      id.scope.hasGlobal(name)</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//ps: 一个小的发现在visitor函数中this等于参数state</span></span><br></pre></td></tr></table></figure>
-<p><strong>结语：</strong><br>  我这里写的只是AST的冰山一粒，上述内容其实在babel handbook上都有，把自己心得体会记录下来，一是要是以后忘记了，看自己的文字更加容易唤醒自己的记忆，二是为自己的学习留下痕迹，再者有新的发现再到新文章中再叙吧。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 以下为babel-plugin-transform-remove-console的部分源码</span></span><br><span class="line"><span class="comment">    插件export的是一个接收当前babel对象的函数，这里他取这个对象的types属性，这个types属性出自于@babel/types，</span></span><br><span class="line"><span class="comment">    在这里用于创建AST节点替换原来的节点。</span></span><br><span class="line"><span class="comment">    函数返回一个对象，对象比较重要的属性是visitor。用来定义当遍历访问到某类节点时，需要进行的用户自定义的操作。</span></span><br><span class="line"><span class="comment">    节点的类型可以很简单地在AST Explorer中书写代码，通过显示的解析后的AST树中获知。</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="built_in">module</span>.exports = <span class="function"><span class="keyword">function</span>(<span class="params">&#123; types: t &#125;</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    name: <span class="string">"transform-remove-console"</span>,</span><br><span class="line">    visitor: &#123;</span><br><span class="line">      <span class="comment">// CallExpression表示函数调用，这些vistor的函数接收两个参数第一个是NodePath的对象</span></span><br><span class="line">      <span class="comment">// 另一个是用于缓存遍历数据的参数state</span></span><br><span class="line">      <span class="comment">// 便于用户在访问节点时存储自己需要的信息</span></span><br><span class="line">      CallExpression(path, state) &#123;</span><br><span class="line">        <span class="keyword">const</span> callee = path.get(<span class="string">"callee"</span>);</span><br><span class="line">        <span class="comment">// NodePath通过get方法，获得对应的子Path，注意返回的也是一个NodePath的对象，并非是节点本身</span></span><br><span class="line">        <span class="comment">// Node可以通过NodePath.node获取，NodePath除了存储当前的Node以外,还保存节点的层级结构</span></span><br><span class="line">        <span class="comment">// 如通过Path.getSibling(index) 获取nth的当前层级的NodePath;</span></span><br><span class="line">        <span class="comment">// path.parentPath 获父NodePath</span></span><br><span class="line">        <span class="comment">// 另外所有替换删除的操作都是在NodePath上进行</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// NodePath有一系列is开头的方法，用于确认Path是否为某种类型</span></span><br><span class="line">        <span class="keyword">if</span> (!callee.isMemberExpression()) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (isIncludedConsole(callee, state.opts.exclude)) &#123;</span><br><span class="line">          <span class="comment">// console.log()</span></span><br><span class="line">          <span class="keyword">if</span> (path.parentPath.isExpressionStatement()) &#123;</span><br><span class="line">            path.remove(); <span class="comment">// 删除Path</span></span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            path.replaceWith(createVoid0());</span><br><span class="line">            <span class="comment">// 用一个新的NodePath代替原来的NodePath</span></span><br><span class="line">            <span class="comment">// NodePath一般用上面的types参数以types.UnaryExpression等</span></span><br><span class="line">            <span class="comment">// types后接NodePath type的构造方法创建</span></span><br><span class="line">            <span class="comment">// 如这里的createVoid0就是以types.UnaryExpression('void', [0])构造的</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (isIncludedConsoleBind(callee, state.opts.exclude)) &#123;</span><br><span class="line">          <span class="comment">// console.log.bind()</span></span><br><span class="line">          path.replaceWith(createNoop());</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      MemberExpression: &#123;</span><br><span class="line">        <span class="comment">// 访问节点有两个阶段一个是enter、一个exit，默认是enter</span></span><br><span class="line">        <span class="comment">// 访问结束发生该节点下的子节点遍历完返回时</span></span><br><span class="line">        exit(path, state) &#123;</span><br><span class="line">          <span class="keyword">if</span> (</span><br><span class="line">            isIncludedConsole(path, state.opts.exclude) &amp;&amp;</span><br><span class="line">            !path.parentPath.isMemberExpression()</span><br><span class="line">          ) &#123;</span><br><span class="line">            <span class="keyword">if</span> (</span><br><span class="line">              path.parentPath.isAssignmentExpression() &amp;&amp;</span><br><span class="line">              path.parentKey === <span class="string">"left"</span></span><br><span class="line">            ) &#123;</span><br><span class="line">              path.parentPath.get(<span class="string">"right"</span>).replaceWith(createNoop());</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">              path.replaceWith(createNoop());</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="comment">// 值得一提的是在这个插件加了一个验证console是否为全局的操作</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">isGlobalConsoleId</span>(<span class="params">id</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> name = <span class="string">"console"</span>;</span><br><span class="line">    <span class="comment">// 首先通过scope.getBinding确认console是否是为用户定义的，其次再验证在全局作用域中是否有console定义</span></span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">      id.isIdentifier(&#123; name &#125;) &amp;&amp;</span><br><span class="line">      !id.scope.getBinding(name) &amp;&amp;</span><br><span class="line">      id.scope.hasGlobal(name)</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//ps: 一个小的发现在visitor函数中this等于参数state</span></span><br></pre></td></tr></table></figure>
+<p><strong>结语：</strong><br>我这里写的只是 AST 的冰山一粒，上述内容其实在 babel handbook 上都有，把自己心得体会记录下来，一是要是以后忘记了，看自己的文字更加容易唤醒自己的记忆，二是为自己的学习留下痕迹，再者有新的发现再到新文章中再叙吧。</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/20/ast-exploration/" data-id="cjnhlxt6s000098u1rk0jeix0" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/20/ast-exploration/" data-id="cjnhmh75c000020u1cp8z318t" class="article-share-link">Share</a>
       
       
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/AST/">AST</a></li></ul>
+
     </footer>
   </div>
   
@@ -147,54 +159,11 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" data-id="cjnhlxt74000298u1q4d5hhk5" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" data-id="cjnhmh75k000120u172jx5fmt" class="article-share-link">Share</a>
       
       
-    </footer>
-  </div>
-  
-</article>
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/git/">git</a></li></ul>
 
-
-  
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2018/10/11/hello-world/" class="article-date">
-  <time datetime="2018-10-11T15:18:34.251Z" itemprop="datePublished">2018-10-11</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2018/10/11/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/hello-world/" data-id="cjnhlxt71000198u1ncj0vuo7" class="article-share-link">Share</a>
-      
-      
     </footer>
   </div>
   
@@ -212,9 +181,23 @@
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
@@ -233,15 +216,11 @@
       <ul>
         
           <li>
-            <a href="/study-memo/2018/10/20/ast-exploration/">(no title)</a>
+            <a href="/study-memo/2018/10/20/ast-exploration/">探索抽象语法树</a>
           </li>
         
           <li>
             <a href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/">使用不用终端维护同一个hexo博客</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2018/10/11/hello-world/">Hello World</a>
           </li>
         
       </ul>
