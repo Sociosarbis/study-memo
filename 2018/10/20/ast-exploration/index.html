@@ -7,13 +7,17 @@
   
   <title>a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
+  <meta name="description" content="源起:前段时间通过一篇关于开发者他介绍自己开发的 web 应用的文章知道了这名开发者。觉得他很厉害，要向他学习。所以呢，就学习一下他之前做过的项目。虽然是想认真研究完的，一来是代码没有什么注释，二来我认真看过的部分某些其实可参考意义不是很大。所以这个计划的执行就暂停了。不过呢，在其中我也找到了一个我想了解的方向，就是 AST（抽象语法树），这个其实会挺有用的。原因我暂时想到的有两点:一、通过解析代">
+<meta property="og:type" content="article">
 <meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/index.html">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2018/10/20/ast-exploration/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="源起:前段时间通过一篇关于开发者他介绍自己开发的 web 应用的文章知道了这名开发者。觉得他很厉害，要向他学习。所以呢，就学习一下他之前做过的项目。虽然是想认真研究完的，一来是代码没有什么注释，二来我认真看过的部分某些其实可参考意义不是很大。所以这个计划的执行就暂停了。不过呢，在其中我也找到了一个我想了解的方向，就是 AST（抽象语法树），这个其实会挺有用的。原因我暂时想到的有两点:一、通过解析代">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2018-10-20T15:36:56.978Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:description" content="源起:前段时间通过一篇关于开发者他介绍自己开发的 web 应用的文章知道了这名开发者。觉得他很厉害，要向他学习。所以呢，就学习一下他之前做过的项目。虽然是想认真研究完的，一来是代码没有什么注释，二来我认真看过的部分某些其实可参考意义不是很大。所以这个计划的执行就暂停了。不过呢，在其中我也找到了一个我想了解的方向，就是 AST（抽象语法树），这个其实会挺有用的。原因我暂时想到的有两点:一、通过解析代">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,9 +64,7 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-ast-exploration" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-ast-exploration" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2018/10/20/ast-exploration/" class="article-date">
   <time datetime="2018-10-20T08:19:32.639Z" itemprop="datePublished">2018-10-20</time>
@@ -87,122 +89,19 @@
     </footer>
   </div>
   
-</article>
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-maintain-the-same-hexo-project-with-diffrent-devices" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" class="article-date">
-  <time datetime="2018-10-11T15:18:34.252Z" itemprop="datePublished">2018-10-11</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/">使用不用终端维护同一个hexo博客</a>
-    </h1>
+    <a href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">使用不用终端维护同一个hexo博客</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h3 id="初步不合理的尝试"><a href="#初步不合理的尝试" class="headerlink" title="初步不合理的尝试"></a>初步不合理的尝试</h3><p>这个问题来自于今天在公司我尝试使用 hexo 去生成个人博客，hexo 的 deploy 只会生成页面 build 好的文件并推送到远程仓库，<br>这样远程仓库就没有 hexo 项目的 source 了。因此，回家以后就没有项目的文件进行下一步的维护。只好重新创建一次项目，并推送<br>远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。<br>于是我凭着直觉和对 git 微薄的认知，进行了一下两次不同的错误尝试。</p>
-<h3 id="尝试一："><a href="#尝试一：" class="headerlink" title="尝试一："></a>尝试一：</h3><p><strong>1.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> git@github.com:Sociosarbis/study-memo.git</span><br></pre></td></tr></table></figure>
-<p><strong>2.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b hexo</span><br></pre></td></tr></table></figure>
-<p><strong>3.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
-<p>初始化 hexo 项目，然后问题来了，hexo 提示需要当前文件夹是一个空文件夹，只能把所有文件夹的都删，包括.git 文件夹。<br>这样一来就相当于重头来过</p>
-<h4 id="尝试二"><a href="#尝试二" class="headerlink" title="尝试二:"></a>尝试二:</h4><p><strong>1.</strong> 既然需要一个空文件夹，那么就从刚才的空文件夹开始</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
-<p><strong>2.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b hexo</span><br></pre></td></tr></table></figure>
-<p><strong>3.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add origin git@github.com:Sociosarbis/study-memo.git</span><br></pre></td></tr></table></figure>
-<p>自觉这一步是会关联所有的本地分支和远程分支的，<br><strong><em>但其实只是相当于给仓库地址创建了一个 shortname，例如上面的 origin 代表了 <a href="mailto:git@github.com" target="_blank" rel="noopener">git@github.com</a>:Sociosarbis/study-memo.git 的地址</em></strong></p>
-<p><strong>4.</strong> 直接<code>git push origin/hexo</code>然后提示远程并没有这个仓库</p>
-<p><strong>5.</strong> 好吧，既然这样就手动在 github 上创建 hexo 的分支，但是这个分支完完全全是 master 的复制<br><strong>6.</strong> 创建完以后再尝试 push，然后提示需要 pull 一次<br><strong>7.</strong> 然后直接<code>git pull</code>，错误提示没有指定需要从哪个远程分支 pull</p>
-<p><strong>8.</strong> 那我就用这个命令把两个分支关联起来</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch --<span class="built_in">set</span>-upstream-to=origin/hexo hexo</span><br></pre></td></tr></table></figure>
-<p>然后再<code>git pull</code>一次再次错误提示<code>refusing to merge unrelated histories</code></p>
-<p><strong>9.</strong> 网上 search 过后在<code>git pull</code>后面加上<code>--allow-unrelated-histories</code>，终于 pull 成功了</p>
-<p><strong>10.</strong> 接下来就是我比较熟悉的过程了，删除 pull 下来的生成的页面文件，commit 以后再 push 上去，成功解决</p>
-<h3 id="正确做法"><a href="#正确做法" class="headerlink" title="正确做法"></a>正确做法</h3><p>虽然最后成功完成了任务，但是这样明显是不够优雅的。<br>再去网上查找，找到了两个能很好地解决这次问题的或者说关于本地与远程仓库关联的两个命令。</p>
-<p><strong>分别是</strong>:</p>
-<p><strong>1.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push --<span class="built_in">set</span>-upstream origin branch_name</span><br></pre></td></tr></table></figure>
-<p>在远程创建一个与本地 branch_name 分支同名的分支并跟踪</p>
-<p><strong>2.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout --track orgin/branch_name</span><br></pre></td></tr></table></figure>
-<p>在本地创建一个与 branch_name 同名分支跟踪远程分支</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" data-id="cjnhlxt74000298u1q4d5hhk5" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
   
 </article>
-
-
-  
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2018/10/11/hello-world/" class="article-date">
-  <time datetime="2018-10-11T15:18:34.251Z" itemprop="datePublished">2018-10-11</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2018/10/11/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/hello-world/" data-id="cjnhlxt71000198u1ncj0vuo7" class="article-share-link">Share</a>
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-
 
 </section>
         
