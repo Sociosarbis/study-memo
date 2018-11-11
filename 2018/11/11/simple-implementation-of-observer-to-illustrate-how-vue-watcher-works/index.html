@@ -5,15 +5,20 @@
   
 
   
-  <title>a house in the woods</title>
+  <title>通过简化版的Observer的实现来说明vue的watch的工作原理 | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/index.html">
+  <meta name="description" content="前言其实关于vue实例watch项的设置是怎么观测到数据变化的，这个问题很久之前我就很有兴趣去了解了。之前也有通过一些文章去了解过，由于懒，了解完以后就自己亲自做深入的探索或者说自己去阅读源码，所以很长的一段时间来说，我对这个机制还是有点模糊的。但是，这周周五，工作上碰到了一个问题——怎么脱离vue（或者说不去创建vue的实例设置watch项）然后去检测vuex store的变化呢。其实这个问题最">
+<meta name="keywords" content="vue,watcher">
+<meta property="og:type" content="article">
+<meta property="og:title" content="通过简化版的Observer的实现来说明vue的watch的工作原理">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言其实关于vue实例watch项的设置是怎么观测到数据变化的，这个问题很久之前我就很有兴趣去了解了。之前也有通过一些文章去了解过，由于懒，了解完以后就自己亲自做深入的探索或者说自己去阅读源码，所以很长的一段时间来说，我对这个机制还是有点模糊的。但是，这周周五，工作上碰到了一个问题——怎么脱离vue（或者说不去创建vue的实例设置watch项）然后去检测vuex store的变化呢。其实这个问题最">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2018-11-11T09:16:24.359Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="通过简化版的Observer的实现来说明vue的watch的工作原理">
+<meta name="twitter:description" content="前言其实关于vue实例watch项的设置是怎么观测到数据变化的，这个问题很久之前我就很有兴趣去了解了。之前也有通过一些文章去了解过，由于懒，了解完以后就自己亲自做深入的探索或者说自己去阅读源码，所以很长的一段时间来说，我对这个机制还是有点模糊的。但是，这周周五，工作上碰到了一个问题——怎么脱离vue（或者说不去创建vue的实例设置watch项）然后去检测vuex store的变化呢。其实这个问题最">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,9 +65,7 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-simple-implementation-of-observer-to-illustrate-how-vue-watcher-works" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-simple-implementation-of-observer-to-illustrate-how-vue-watcher-works" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/" class="article-date">
   <time datetime="2018-11-11T08:39:51.585Z" itemprop="datePublished">2018-11-11</time>
@@ -75,8 +78,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/">通过简化版的Observer的实现来说明vue的watch的工作原理</a>
+    <h1 class="article-title" itemprop="name">
+      通过简化版的Observer的实现来说明vue的watch的工作原理
     </h1>
   
 
@@ -98,120 +101,19 @@
     </footer>
   </div>
   
-</article>
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-ast-exploration" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2018/10/20/ast-exploration/" class="article-date">
-  <time datetime="2018-10-20T08:19:32.639Z" itemprop="datePublished">2018-10-20</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2018/10/20/ast-exploration/">探索抽象语法树</a>
-    </h1>
+    <a href="/study-memo/2018/10/20/ast-exploration/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">探索抽象语法树</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><strong>源起:</strong><br>前段时间通过一篇关于开发者他介绍自己开发的 web 应用的文章知道了这名开发者。觉得他很厉害，要向他学习。所以呢，就学习一下他之前做过的项目。虽然是想认真研究完的，一来是代码没有什么注释，二来我认真看过的部分某些其实可参考意义不是很大。所以这个计划的执行就暂停了。不过呢，在其中我也找到了一个我想了解的方向，就是 AST（抽象语法树），这个其实会挺有用的。<br>原因我暂时想到的有两点:<br>一、通过解析代码，能够拿到代码结构化的信息，这样可以应用于一些代码自动化生成，解析模块依赖等（这种可以自动化的东西就是我辈所向往的）<br>二、单纯自己通过正则去实现这样的解析还是一个比较麻烦的工程，暂时非自己能力所及。<br><strong>实践:</strong><br>JS 的 AST 的解析主要会用到 Babel 这个库。其中需要了解到的主要有这三个个包@babel/parser(babylon)、@babel/traverse、@babel/type。<br>下面以官方的一个插件说明 AST 中的一些概念和使用流程:</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 以下为babel-plugin-transform-remove-console的部分源码</span></span><br><span class="line"><span class="comment">    插件export的是一个接收当前babel对象的函数，这里他取这个对象的types属性，这个types属性出自于@babel/types，</span></span><br><span class="line"><span class="comment">    在这里用于创建AST节点替换原来的节点。</span></span><br><span class="line"><span class="comment">    函数返回一个对象，对象比较重要的属性是visitor。用来定义当遍历访问到某类节点时，需要进行的用户自定义的操作。</span></span><br><span class="line"><span class="comment">    节点的类型可以很简单地在AST Explorer中书写代码，通过显示的解析后的AST树中获知。</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="built_in">module</span>.exports = <span class="function"><span class="keyword">function</span>(<span class="params">&#123; types: t &#125;</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    name: <span class="string">"transform-remove-console"</span>,</span><br><span class="line">    visitor: &#123;</span><br><span class="line">      <span class="comment">// CallExpression表示函数调用，这些vistor的函数接收两个参数第一个是NodePath的对象</span></span><br><span class="line">      <span class="comment">// 另一个是用于缓存遍历数据的参数state</span></span><br><span class="line">      <span class="comment">// 便于用户在访问节点时存储自己需要的信息</span></span><br><span class="line">      CallExpression(path, state) &#123;</span><br><span class="line">        <span class="keyword">const</span> callee = path.get(<span class="string">"callee"</span>);</span><br><span class="line">        <span class="comment">// NodePath通过get方法，获得对应的子Path，注意返回的也是一个NodePath的对象，并非是节点本身</span></span><br><span class="line">        <span class="comment">// Node可以通过NodePath.node获取，NodePath除了存储当前的Node以外,还保存节点的层级结构</span></span><br><span class="line">        <span class="comment">// 如通过Path.getSibling(index) 获取nth的当前层级的NodePath;</span></span><br><span class="line">        <span class="comment">// path.parentPath 获父NodePath</span></span><br><span class="line">        <span class="comment">// 另外所有替换删除的操作都是在NodePath上进行</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// NodePath有一系列is开头的方法，用于确认Path是否为某种类型</span></span><br><span class="line">        <span class="keyword">if</span> (!callee.isMemberExpression()) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (isIncludedConsole(callee, state.opts.exclude)) &#123;</span><br><span class="line">          <span class="comment">// console.log()</span></span><br><span class="line">          <span class="keyword">if</span> (path.parentPath.isExpressionStatement()) &#123;</span><br><span class="line">            path.remove(); <span class="comment">// 删除Path</span></span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            path.replaceWith(createVoid0());</span><br><span class="line">            <span class="comment">// 用一个新的NodePath代替原来的NodePath</span></span><br><span class="line">            <span class="comment">// NodePath一般用上面的types参数以types.UnaryExpression等</span></span><br><span class="line">            <span class="comment">// types后接NodePath type的构造方法创建</span></span><br><span class="line">            <span class="comment">// 如这里的createVoid0就是以types.UnaryExpression('void', [0])构造的</span></span><br><span class="line">          &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (isIncludedConsoleBind(callee, state.opts.exclude)) &#123;</span><br><span class="line">          <span class="comment">// console.log.bind()</span></span><br><span class="line">          path.replaceWith(createNoop());</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;,</span><br><span class="line">      MemberExpression: &#123;</span><br><span class="line">        <span class="comment">// 访问节点有两个阶段一个是enter、一个exit，默认是enter</span></span><br><span class="line">        <span class="comment">// 访问结束发生该节点下的子节点遍历完返回时</span></span><br><span class="line">        exit(path, state) &#123;</span><br><span class="line">          <span class="keyword">if</span> (</span><br><span class="line">            isIncludedConsole(path, state.opts.exclude) &amp;&amp;</span><br><span class="line">            !path.parentPath.isMemberExpression()</span><br><span class="line">          ) &#123;</span><br><span class="line">            <span class="keyword">if</span> (</span><br><span class="line">              path.parentPath.isAssignmentExpression() &amp;&amp;</span><br><span class="line">              path.parentKey === <span class="string">"left"</span></span><br><span class="line">            ) &#123;</span><br><span class="line">              path.parentPath.get(<span class="string">"right"</span>).replaceWith(createNoop());</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">              path.replaceWith(createNoop());</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="comment">// 值得一提的是在这个插件加了一个验证console是否为全局的操作</span></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">isGlobalConsoleId</span>(<span class="params">id</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> name = <span class="string">"console"</span>;</span><br><span class="line">    <span class="comment">// 首先通过scope.getBinding确认console是否是为用户定义的，其次再验证在全局作用域中是否有console定义</span></span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">      id.isIdentifier(&#123; name &#125;) &amp;&amp;</span><br><span class="line">      !id.scope.getBinding(name) &amp;&amp;</span><br><span class="line">      id.scope.hasGlobal(name)</span><br><span class="line">    );</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//ps: 一个小的发现在visitor函数中this等于参数state</span></span><br></pre></td></tr></table></figure>
-<p><strong>结语：</strong><br>我这里写的只是 AST 的冰山一粒，上述内容其实在 babel handbook 上都有，把自己心得体会记录下来，一是要是以后忘记了，看自己的文字更加容易唤醒自己的记忆，二是为自己的学习留下痕迹，再者有新的发现再到新文章中再叙吧。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/20/ast-exploration/" data-id="cjnhmh75c000020u1cp8z318t" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/AST/">AST</a></li></ul>
-
-    </footer>
-  </div>
   
 </article>
-
-
-  
-    <article id="post-maintain-the-same-hexo-project-with-diffrent-devices" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" class="article-date">
-  <time datetime="2018-10-11T15:18:34.252Z" itemprop="datePublished">2018-10-11</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/">使用不用终端维护同一个hexo博客</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h3 id="初步不合理的尝试"><a href="#初步不合理的尝试" class="headerlink" title="初步不合理的尝试"></a>初步不合理的尝试</h3><p>这个问题来自于今天在公司我尝试使用 hexo 去生成个人博客，hexo 的 deploy 只会生成页面 build 好的文件并推送到远程仓库，<br>这样远程仓库就没有 hexo 项目的 source 了。因此，回家以后就没有项目的文件进行下一步的维护。只好重新创建一次项目，并推送<br>远程仓库分支上，这样不同在不同终端上都能获取到这些文件了。<br>于是我凭着直觉和对 git 微薄的认知，进行了一下两次不同的错误尝试。</p>
-<h3 id="尝试一："><a href="#尝试一：" class="headerlink" title="尝试一："></a>尝试一：</h3><p><strong>1.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> git@github.com:Sociosarbis/study-memo.git</span><br></pre></td></tr></table></figure>
-<p><strong>2.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b hexo</span><br></pre></td></tr></table></figure>
-<p><strong>3.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
-<p>初始化 hexo 项目，然后问题来了，hexo 提示需要当前文件夹是一个空文件夹，只能把所有文件夹的都删，包括.git 文件夹。<br>这样一来就相当于重头来过</p>
-<h4 id="尝试二"><a href="#尝试二" class="headerlink" title="尝试二:"></a>尝试二:</h4><p><strong>1.</strong> 既然需要一个空文件夹，那么就从刚才的空文件夹开始</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
-<p><strong>2.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b hexo</span><br></pre></td></tr></table></figure>
-<p><strong>3.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add origin git@github.com:Sociosarbis/study-memo.git</span><br></pre></td></tr></table></figure>
-<p>自觉这一步是会关联所有的本地分支和远程分支的，<br><strong><em>但其实只是相当于给仓库地址创建了一个 shortname，例如上面的 origin 代表了 <a href="mailto:git@github.com" target="_blank" rel="noopener">git@github.com</a>:Sociosarbis/study-memo.git 的地址</em></strong></p>
-<p><strong>4.</strong> 直接<code>git push origin/hexo</code>然后提示远程并没有这个仓库</p>
-<p><strong>5.</strong> 好吧，既然这样就手动在 github 上创建 hexo 的分支，但是这个分支完完全全是 master 的复制<br><strong>6.</strong> 创建完以后再尝试 push，然后提示需要 pull 一次<br><strong>7.</strong> 然后直接<code>git pull</code>，错误提示没有指定需要从哪个远程分支 pull</p>
-<p><strong>8.</strong> 那我就用这个命令把两个分支关联起来</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch --<span class="built_in">set</span>-upstream-to=origin/hexo hexo</span><br></pre></td></tr></table></figure>
-<p>然后再<code>git pull</code>一次再次错误提示<code>refusing to merge unrelated histories</code></p>
-<p><strong>9.</strong> 网上 search 过后在<code>git pull</code>后面加上<code>--allow-unrelated-histories</code>，终于 pull 成功了</p>
-<p><strong>10.</strong> 接下来就是我比较熟悉的过程了，删除 pull 下来的生成的页面文件，commit 以后再 push 上去，成功解决</p>
-<h3 id="正确做法"><a href="#正确做法" class="headerlink" title="正确做法"></a>正确做法</h3><p>虽然最后成功完成了任务，但是这样明显是不够优雅的。<br>再去网上查找，找到了两个能很好地解决这次问题的或者说关于本地与远程仓库关联的两个命令。</p>
-<p><strong>分别是</strong>:</p>
-<p><strong>1.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push --<span class="built_in">set</span>-upstream origin branch_name</span><br></pre></td></tr></table></figure>
-<p>在远程创建一个与本地 branch_name 分支同名的分支并跟踪</p>
-<p><strong>2.</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout --track orgin/branch_name</span><br></pre></td></tr></table></figure>
-<p>在本地创建一个与 branch_name 同名分支跟踪远程分支</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" data-id="cjnhmh75k000120u172jx5fmt" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/git/">git</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-
 
 </section>
         
