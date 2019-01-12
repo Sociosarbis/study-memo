@@ -62,6 +62,49 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-use-temporary-variables-in-Vue-template" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/" class="article-date">
+  <time datetime="2019-01-12T13:32:53.990Z" itemprop="datePublished">2019-01-12</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/">在Vue的template里面使用临时变量</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong>前言</strong><br>实际上很久以前就发现了这样的问题了，在 vue 的 template 中不能使用临时变量，而使用 render 函数就不存在这样的问题了。这周五因为在重构项目里某个方法，而在 UI 方面使用的是 vue，里面就有需要使用临时变量的情况。<br>某个部分的 template 大概是这样的</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">v-if</span>=<span class="string">"hasNextParams"</span>&gt;</span><span class="tag">&lt;<span class="name">div</span> <span class="attr">v-for</span>=<span class="string">"getNextParams"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>他用到的两个方法其实逻辑是差不多的，实际上可以都用 getNextParams 的结果作为 v-if 的判断。但问题是由于需要在两个地方需要引用到这个临时的结果，导致没修改前需要重复调用一个方法，正常来说，我们应该只做一次运算，缓存这个结果就好了。于是，我下班后就查了一下，在 stackOverflow 里找到了 scope-slot 的方案。（其实这个假如是熟悉 vue 的同学应该一下就想出来了，惭愧）<br>这个方案结合我自己的实际情况，修改后做了一个这样的组件，代码如下：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">template</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">div</span>&gt;</span><span class="tag">&lt;<span class="name">slot</span> <span class="attr">v-bind</span>=<span class="string">"passedProps"</span> /&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">template</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="undefined"></span></span><br><span class="line"><span class="undefined">  export default &#123;</span></span><br><span class="line"><span class="undefined">    name: 'Pass',</span></span><br><span class="line"><span class="undefined">    props: &#123;</span></span><br><span class="line"><span class="undefined">      passedProps: Object,</span></span><br><span class="line"><span class="undefined">      default() &#123;</span></span><br><span class="line"><span class="undefined">        return &#123;&#125;</span></span><br><span class="line"><span class="undefined">      &#125;</span></span><br><span class="line"><span class="undefined">    &#125;</span></span><br><span class="line"><span class="undefined">  &#125;</span></span><br><span class="line"><span class="undefined"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!--组件调用--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">template</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Pass</span> <span class="attr">style</span>=<span class="string">"color:#c00;"</span> <span class="attr">:passedProps</span>=<span class="string">"&#123;params: [1, 2, 3]&#125;"</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--这里的slot-scope拿到的是上面bind到slot上的值，这里还用了解构取到里面的params参数--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">template</span> <span class="attr">slot-scope</span>=<span class="string">"&#123;params&#125;"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">div</span> <span class="attr">v-if</span>=<span class="string">"params.length &gt;= 0"</span>&gt;</span><span class="tag">&lt;<span class="name">div</span>&gt;</span>&#123;&#123; params &#125;&#125;<span class="tag">&lt;/<span class="name">div</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">template</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Pass</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">template</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p><strong>后记</strong><br>在我实践过程中发现实际上<code>&lt;template&gt;&lt;div/&gt;&lt;/template&gt;</code>组件跟React里面<code>{[&lt;div/&gt;]}</code>代表的意思是一样的，他返回的是一个数组，实际他不是一个根，由于是一个数组，会报错跟你说需要提供一个单根而不能是multi-root，所以也就能理解为什么Vue文件里的template下不能直接加template标签作为他的根了。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/" data-id="cjqtjc56w00048ou10cloczvi" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/temporay-variable/">temporay variable</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/">vue</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Needleman-Wunsch-Algorithm" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2018/12/09/Needleman-Wunsch-Algorithm/" class="article-date">
@@ -101,7 +144,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/12/09/Needleman-Wunsch-Algorithm/" data-id="cjpzgmcw40000jwu1w6vore3e" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2018/12/09/Needleman-Wunsch-Algorithm/" data-id="cjqtjc56f00008ou11v5tu3g2" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li></ul>
@@ -141,7 +184,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/" data-id="cjpzgmcwz000bjwu1a9j1iwgs" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/" data-id="cjqtjc57k000i8ou144493xcj" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li></ul>
@@ -182,7 +225,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/20/ast-exploration/" data-id="cjpzgmcwc0001jwu16o3gwwj4" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/20/ast-exploration/" data-id="cjqtjc56o00018ou1j9mmu6k8" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/AST/">AST</a></li></ul>
@@ -250,7 +293,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" data-id="cjpzgmcwg0003jwu15y4m9a6j" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" data-id="cjqtjc56u00038ou1lubv65tq" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/git/">git</a></li></ul>
@@ -275,7 +318,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporay-variable/">temporay variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li></ul>
     </div>
   </div>
 
@@ -285,7 +328,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/algorithm/" style="font-size: 10px;">algorithm</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/vue/" style="font-size: 10px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a>
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/algorithm/" style="font-size: 10px;">algorithm</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/template/" style="font-size: 10px;">template</a> <a href="/study-memo/tags/temporay-variable/" style="font-size: 10px;">temporay variable</a> <a href="/study-memo/tags/vue/" style="font-size: 20px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a>
     </div>
   </div>
 
@@ -294,7 +337,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
     </div>
   </div>
 
@@ -305,6 +348,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/">在Vue的template里面使用临时变量</a>
+          </li>
         
           <li>
             <a href="/study-memo/2018/12/09/Needleman-Wunsch-Algorithm/">学习Needleman-Wunsch-algorithm</a>
@@ -334,7 +381,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2018 Sociosarbis<br>
+      &copy; 2019 Sociosarbis<br>
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
