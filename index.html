@@ -62,6 +62,52 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-compile_cpp_from_command_line" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2019/03/10/compile_cpp_from_command_line/" class="article-date">
+  <time datetime="2019-03-10T11:43:30.615Z" itemprop="datePublished">2019-03-10</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2019/03/10/compile_cpp_from_command_line/">使用命令行编译C++</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>最近这几个月都有在看C++的知识，由于之前一直都在用VSCode写代码，所以也想在编写C++代码时也尽量不需要换IDE。但是本身VSCode在辅助编译上没有等提供UI的支持，所以需要知道一些原始的命令行编译方面的配置。<br>VSCode的改作C++IDE，可以按照这个网页的说明进行配置[VSCode的C++配置]<a href="https://www.zhihu.com/question/30315894/answer/154979413" target="_blank" rel="noopener">https://www.zhihu.com/question/30315894/answer/154979413</a><br>1.上面的配置适用于单文件的无第三方库的编译，从里面的参数来看， 命令行只需要<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clang++ <span class="variable">$fileName</span> -o <span class="variable">$fileNameWithoutExt</span>.exe就可以生成可执行文件</span><br></pre></td></tr></table></figure></p>
+<p>2.如果需要编译多个.cpp文件则需要,注意头文件不能放在命令行中直接引入<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clang++ <span class="variable">$fileName1</span> <span class="variable">$fileName2</span> ...(表示省略第二文件以后的文件名) -o <span class="variable">$fileNameWithoutExt</span>.exe</span><br></pre></td></tr></table></figure></p>
+<p>3.如果我在文件中用了第三方库e.g.Boost的话,下面是Boost的入门demo<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/lambda/lambda.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iterator&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;algorithm&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">using</span> <span class="keyword">namespace</span> boost::lambda;</span><br><span class="line">    <span class="keyword">typedef</span> <span class="built_in">std</span>::istream_iterator&lt;<span class="keyword">int</span>&gt; in;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::for_each(</span><br><span class="line">        in(<span class="built_in">std</span>::<span class="built_in">cin</span>), in(), <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; (_1 * <span class="number">3</span>) &lt;&lt; <span class="string">" "</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>如果我们直接进行编译，编译器会显示<strong>fatal error: ‘boost/lambda/lambda.hpp’ file not found</strong>错误，说编译器找不到头文件，如果是我们编写的头文件在include的时候会使用double quote（双引），编译器默认会在文件的当前目录下进行查找这个头文件。但是如果是尖括号的&lt;<strong>boost/lambda/lambda.hpp</strong>&gt;,则需要把库文件的目录加入到命令行中，供编译器进行查找。则需要用到-I&lt;dir&gt;参数，如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">clang++ -I <span class="string">"C:/Program Files/boost_1_69_0"</span> <span class="variable">$fileName</span> -o <span class="variable">$fileNameWithoutExt</span>.exe</span><br></pre></td></tr></table></figure></p>
+<p>4.虽然上面这个简单的用例可以不报错了，但是对于以下这个例子不适用<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/array.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/asio.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> boost::asio::ip::tcp;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">try</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (argc != <span class="number">2</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">cerr</span> &lt;&lt; <span class="string">"Usage: client &lt;host&gt;"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        boost::asio::io_context io_context;</span><br><span class="line"></span><br><span class="line">        tcp::<span class="function">resolver <span class="title">resolver</span><span class="params">(io_context)</span></span>;</span><br><span class="line">        tcp::resolver::results_type endpoints = resolver.resolve(argv[<span class="number">1</span>], <span class="string">"daytime"</span>);</span><br><span class="line">        tcp::<span class="function">socket <span class="title">socket</span><span class="params">(io_context)</span></span>;</span><br><span class="line">        boost::asio::connect(socket, endpoints);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (;;)</span><br><span class="line">        &#123;</span><br><span class="line">            boost::<span class="built_in">array</span>&lt;<span class="keyword">char</span>, 128&gt; buf;</span><br><span class="line">            boost::system::error_code error;</span><br><span class="line">            <span class="keyword">size_t</span> len = socket.read_some(boost::asio::buffer(buf), error);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (error == boost::asio::error::eof)</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (error)</span><br><span class="line">                <span class="keyword">throw</span> boost::system::system_error(error);</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span>.write(buf.data(), len);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (<span class="built_in">std</span>::exception&amp; e)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cerr</span> &lt;&lt; e.what() &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>因为boost::asio会需要用到windows的动态库wsock32等，直接编译会报<code>undefined reference to `__imp_WSAStartup&#39;</code>等错误，<br>这时候需要加上-lwsock32 -lWs2_32这个option<strong>（-l指定某个文件）</strong>，导入wsock32和Ws2_32这两个dll才能成功编译。其实dll也有类似头文件的搜索路径，<br>windows默认在C:\Windows\System32，如果要添加搜索路径可以通过-L&lt;dir&gt;添加。</p>
+<p>在写这篇记录的时候知道两个小知识，第一个是如果cpp中用到了标准库，则需要指定–target=x86_64-w64-mingw这个option，默认在windows的target是x86_64-pc-windows-msvc，由于本机没有安装visual studio，如果不改target的话会找不到头文件。<br>另外获取编译时编译器查找library的search path的方法为在编译的命令行语句后加上-v这个flag</p>
+<p><strong><em>待续</em></strong><br>总结有些仓促，如果有新的发现，会进行更新。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/03/10/compile_cpp_from_command_line/" data-id="cjt30p9ut0000a8u1ifuylu1i" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/windows/">windows</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-use-temporary-variables-in-Vue-template" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/" class="article-date">
@@ -318,7 +364,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporay-variable/">temporay variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporay-variable/">temporay variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li></ul>
     </div>
   </div>
 
@@ -328,7 +374,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/algorithm/" style="font-size: 10px;">algorithm</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/template/" style="font-size: 10px;">template</a> <a href="/study-memo/tags/temporay-variable/" style="font-size: 10px;">temporay variable</a> <a href="/study-memo/tags/vue/" style="font-size: 20px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a>
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/algorithm/" style="font-size: 10px;">algorithm</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/template/" style="font-size: 10px;">template</a> <a href="/study-memo/tags/temporay-variable/" style="font-size: 10px;">temporay variable</a> <a href="/study-memo/tags/vue/" style="font-size: 20px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a>
     </div>
   </div>
 
@@ -337,7 +383,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
     </div>
   </div>
 
@@ -348,6 +394,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/study-memo/2019/03/10/compile_cpp_from_command_line/">使用命令行编译C++</a>
+          </li>
         
           <li>
             <a href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/">在Vue的template里面使用临时变量</a>
@@ -363,10 +413,6 @@
         
           <li>
             <a href="/study-memo/2018/10/20/ast-exploration/">探索抽象语法树</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/">使用不用终端维护同一个hexo博客</a>
           </li>
         
       </ul>
