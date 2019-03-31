@@ -200,103 +200,103 @@ compiler.hooks.compile.tap('DllReferencePlugin', params => {
 
 // 下面是DelegatedModuleFactoryPlugin的执行流程
 apply(normalModuleFactory) {
-		const scope = this.options.scope;
-		if (scope) { //这里可以看一下上面beta.dll的scope
-			normalModuleFactory.hooks.factory.tap(
-				"DelegatedModuleFactoryPlugin",
-				factory => (data, callback) => {
-					const dependency = data.dependencies[0];
-					const request = dependency.request;
-					if (request && request.indexOf(scope + "/") === 0) {
-            //可以看出它会先把scope去掉，让"." + 剩下的部分作为实际的require请求
-						const innerRequest = "." + request.substr(scope.length);
-						let resolved;
-						if (innerRequest in this.options.content) {
-              //会在manifest.json的content中找 实际的require请求 的对应字段
-							resolved = this.options.content[innerRequest];
-							return callback(
-								null,
-								new DelegatedModule(
-									this.options.source,
-									resolved,
-									this.options.type,
-									innerRequest,
-									request
-								)
-							);
-						}
-						for (let i = 0; i < this.options.extensions.length; i++) {
-							const extension = this.options.extensions[i];
-							const requestPlusExt = innerRequest + extension;
-							if (requestPlusExt in this.options.content) {
-								resolved = this.options.content[requestPlusExt];
-								return callback(
-									null,
-									new DelegatedModule(
-										this.options.source,
-										resolved,
-										this.options.type,
-										requestPlusExt,
-										request + extension
-									)
-								);
-							}
-						}
-					}
-					return factory(data, callback);
-				}
-			);
-		} else {
-			normalModuleFactory.hooks.module.tap(
-				"DelegatedModuleFactoryPlugin",
-				module => {
-					if (module.libIdent) {
-            // 这里其实跟上面去除scope的作用是类似的，把前面的context去掉，留下实际的request
-            const request = module.libIdent(this.options);
-						if (request && request in this.options.content) {
-							const resolved = this.options.content[request];
-							return new DelegatedModule(
-								this.options.source,
-								resolved,
-								this.options.type,
-								request,
-								module
-							);
-						}
-					}
-					return module;
-				}
-			);
-		}
-	}
+  const scope = this.options.scope;
+  if (scope) { //这里可以看一下上面beta.dll的scope
+    normalModuleFactory.hooks.factory.tap(
+      "DelegatedModuleFactoryPlugin",
+      factory => (data, callback) => {
+        const dependency = data.dependencies[0];
+        const request = dependency.request;
+        if (request && request.indexOf(scope + "/") === 0) {
+          //可以看出它会先把scope去掉，让"." + 剩下的部分作为实际的require请求
+          const innerRequest = "." + request.substr(scope.length);
+          let resolved;
+          if (innerRequest in this.options.content) {
+            //会在manifest.json的content中找 实际的require请求 的对应字段
+            resolved = this.options.content[innerRequest];
+            return callback(
+              null,
+              new DelegatedModule(
+                this.options.source,
+                resolved,
+                this.options.type,
+                innerRequest,
+                request
+              )
+            );
+          }
+          for (let i = 0; i < this.options.extensions.length; i++) {
+            const extension = this.options.extensions[i];
+            const requestPlusExt = innerRequest + extension;
+            if (requestPlusExt in this.options.content) {
+              resolved = this.options.content[requestPlusExt];
+              return callback(
+                null,
+                new DelegatedModule(
+                  this.options.source,
+                  resolved,
+                  this.options.type,
+                  requestPlusExt,
+                  request + extension
+                )
+              );
+            }
+          }
+        }
+        return factory(data, callback);
+      }
+    );
+  } else {
+    normalModuleFactory.hooks.module.tap(
+      "DelegatedModuleFactoryPlugin",
+      module => {
+        if (module.libIdent) {
+          // 这里其实跟上面去除scope的作用是类似的，把前面的context去掉，留下实际的request
+          const request = module.libIdent(this.options);
+          if (request && request in this.options.content) {
+            const resolved = this.options.content[request];
+            return new DelegatedModule(
+              this.options.source,
+              resolved,
+              this.options.type,
+              request,
+              module
+            );
+          }
+        }
+        return module;
+      }
+    );
+  }
 }
 //无论是否使用scope最后生成的都是一个DelegatedModule
 
 //DelegatedModule的source方法可以印证上面DelegatedModuleFactoryPlugin的作用，以demo为例
 source(depTemplates, runtime) {
-		const dep = /** @type {DelegatedSourceDependency} */ (this.dependencies[0]);
-		const sourceModule = dep.module;
-		let str;
+    const dep = /** @type {DelegatedSourceDependency} */ (this.dependencies[0]);
+    const sourceModule = dep.module;
+    let str;
 
-		if (!sourceModule) {
-			str = WebpackMissingModule.moduleCode(this.sourceRequest);
-		} else {
-			str = `module.exports = (${runtime.moduleExports({
-				module: sourceModule,
-				request: dep.request
+    if (!sourceModule) {
+      str = WebpackMissingModule.moduleCode(this.sourceRequest);
+    } else {
+      str = `module.exports = (${runtime.moduleExports({
+        module: sourceModule,
+        request: dep.request
             })})`;//这一部分对应webpack/lib/RuntimeTemplate.js的moduleExports方法，
             //生成module.exports = __webpack_require__("dll-reference alpha_21c1490edb92ec8e9390")部分
-			switch (this.type) {
-				case "require":
-					str += `(${JSON.stringify(this.request)})`; //这里再在str后加上("./alpha.js")
-					break;
-				case "object":
-					str += `[${JSON.stringify(this.request)}]`;
-					break;
-			}
+      switch (this.type) {
+        case "require":
+          str += `(${JSON.stringify(this.request)})`; //这里再在str后加上("./alpha.js")
+          break;
+        case "object":
+          str += `[${JSON.stringify(this.request)}]`;
+          break;
+      }
 
-			str += ";";
-		}
+      str += ";";
+    }
+}
 ```
 
 **_ExternalModule_**
