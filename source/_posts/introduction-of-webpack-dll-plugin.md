@@ -131,12 +131,12 @@ module.exports = {
 }
 
 // /dll-user/example.js
-console.log(require("../dll/alpha"));
-console.log(require("../dll/a"));
+console.log(require('../dll/alpha'))
+console.log(require('../dll/a'))
 
-console.log(require("beta/beta"));
-console.log(require("beta/b"));
-console.log(require("beta/c"));
+console.log(require('beta/beta'))
+console.log(require('beta/b'))
+console.log(require('beta/c'))
 // 上面require的路径，一种是相对路径../dll/* 一种是scope类路径 beta/*，对于路径解析下面会有进一步的说明，需要注意的是假如是相对路径的require，那么对应的文件必须真实存在于该路径，我的理解是相对路径时，webpack会强制进行对应路径的搜索，如果文件不存在就会报错，找到以后才会把module的处理交给后面的plugins。（未经源码验证）
 ```
 
@@ -179,9 +179,11 @@ compiler.hooks.compile.tap('DllReferencePlugin', params => {
   const normalModuleFactory = params.normalModuleFactory
   new ExternalModuleFactoryPlugin(sourceType || 'var', externals).apply(
     normalModuleFactory
-  ) /* 这里把"dll-reference " + name作为externals的字段，对应上面说的dll-reference alpha_21c1490edb92ec8e9390，
-                而externals的variable的变量名就是包名alpha_21c1490edb92ec8e9390，对应上面提到的module.exports = alpha_21c1490edb92ec8e9390;
-            */
+  ) /* 这里把"dll-reference " + name作为externals的字段，
+      对应上面说的dll-reference alpha_21c1490edb92ec8e9390，
+      而externals的variable的变量名就是包名alpha_21c1490edb92ec8e9390，
+      对应上面提到的module.exports = alpha_21c1490edb92ec8e9390
+    */
   new DelegatedModuleFactoryPlugin({
     source: source,
     type: this.options.type,
@@ -190,8 +192,9 @@ compiler.hooks.compile.tap('DllReferencePlugin', params => {
     content,
     extensions: this.options.extensions
   }).apply(normalModuleFactory)
-  /* 这里的DelegatedModuleFactoryPlugin的作用实际上是把提到的console.log(require("../dll/alpha"));
-    的require变成__webpack_require__("dll-reference alpha_21c1490edb92ec8e9390")("./alpha.js")，也就是说代理到dll-reference alpha_21c1490edb92ec8e9390上
+  /* 这里的DelegatedModuleFactoryPlugin的作用实际上是把提到的console.log(require("../dll/alpha"));的require
+    变成__webpack_require__("dll-reference alpha_21c1490edb92ec8e9390")("./alpha.js")，
+    也就是说代理到dll-reference alpha_21c1490edb92ec8e9390上
     */
 })
 
@@ -204,11 +207,13 @@ apply(normalModuleFactory) {
 				factory => (data, callback) => {
 					const dependency = data.dependencies[0];
 					const request = dependency.request;
-					if (request && request.indexOf(scope + "/") === 0) { //可以看出它会先把scope去掉，让"." + 剩下的部分作为实际的require请求
+					if (request && request.indexOf(scope + "/") === 0) {
+            //可以看出它会先把scope去掉，让"." + 剩下的部分作为实际的require请求
 						const innerRequest = "." + request.substr(scope.length);
 						let resolved;
 						if (innerRequest in this.options.content) {
-							resolved = this.options.content[innerRequest];//会在manifest.json的content中找 实际的require请求 的对应字段
+              //会在manifest.json的content中找 实际的require请求 的对应字段
+							resolved = this.options.content[innerRequest];
 							return callback(
 								null,
 								new DelegatedModule(
@@ -246,7 +251,8 @@ apply(normalModuleFactory) {
 				"DelegatedModuleFactoryPlugin",
 				module => {
 					if (module.libIdent) {
-						const request = module.libIdent(this.options); // 这里其实跟上面去除scope的作用是类似的，把前面的context去掉，留下实际的request
+            // 这里其实跟上面去除scope的作用是类似的，把前面的context去掉，留下实际的request
+            const request = module.libIdent(this.options);
 						if (request && request in this.options.content) {
 							const resolved = this.options.content[request];
 							return new DelegatedModule(
@@ -570,7 +576,8 @@ switch (this.externalType) {
 ```
 
 并且在分情况返回变量名的处理方法是`this.request[this.externalType]`，也就是说以'var'和上面的 lodash 为例子的话，那就相当于({commonjs: 'lodash',amd:'lodash',root: '\_' })['var']。那这样的话自然在编译时就变成了`module.exports=undefined`
-**_第三种 value 是 Array，它的处理方式以当包导出方式是以var为例说明,根据上面的switch condition可知当为var时，按defaultCase处理**
+**\_第三种 value 是 Array，它的处理方式以当包导出方式是以 var 为例说明,根据上面的 switch condition 可知当为 var 时，按 defaultCase 处理**
+
 ```javascript
 getSourceForDefaultCase(optional, request) {
     ...
@@ -584,7 +591,8 @@ getSourceForDefaultCase(optional, request) {
     return `${missingModuleError}module.exports = ${variableName}${objectLookup};`;
     }
 ```
+
 ##总结###
 上面的解析写的比较乱，而且有很多文章内的引用，下次可以考虑使用锚点进行页内跳转。
-dll的工作流程大概是，通过DllPlugin打包library获得js和manifest文件，使用时通过DllReferencePlugin读取manifest文件，解析dll中包含的子模块名等信息。
-DllReferencePlugin内部，创建ExternalModule，把dll加入到externals中，然后通过DelegatedModule，把对实际文件的require请求，代理到dll包中。
+dll 的工作流程大概是，通过 DllPlugin 打包 library 获得 js 和 manifest 文件，使用时通过 DllReferencePlugin 读取 manifest 文件，解析 dll 中包含的子模块名等信息。
+DllReferencePlugin 内部，创建 ExternalModule，把 dll 加入到 externals 中，然后通过 DelegatedModule，把对实际文件的 require 请求，代理到 dll 包中。
