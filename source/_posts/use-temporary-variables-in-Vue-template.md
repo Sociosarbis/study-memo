@@ -3,7 +3,7 @@ title: 在Vue的template里面使用临时变量
 tags:
   - vue
   - template
-  - temporay variable
+  - temporary variable
 ---
 
 **前言**
