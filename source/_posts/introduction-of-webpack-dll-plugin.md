@@ -5,10 +5,9 @@ tags:
   - webpack
   - externals
 ---
-
-**前言**
+## 前言
 最近深感由于公司项目过于庞大，在开发调试时，改动某处代码，常常会让 devServer 崩溃，需要重新启动打包，打包又要等待至少 5 分钟时间，严重影响开发效率这一弊病。于是乎，周末的时候看看有没有优化打包速度的方法，然后就来到这篇文章的主题了。
-**正文**
+## 正文
 所谓的 DLL 其实是一个预编译好的 JS 文件。在使用时除了打包 app 文件的 webpack config 外，需要有一个用于打包 dll 的 webpack cofig 文件。打包 dll 端需要加入 webpack.DllPlugin，app 端需要加入 webpack.DllReferencePlugin。
 假如不加入这个 DllPlugin，就只会生成普通的打包好的 JS 文件，假如以后就会多产出一个 manifest.json 文件，表明这个 library 的包信息。
 manifest.json 的作用在于在 app 端引入时，配合 webpack.DllReferencePlugin，生成相应的 externals 配置和把 require dll 文件里的模块的路径转成先 require dll 的父模块然后再去 require 子模块的形式。e.g.
@@ -592,7 +591,7 @@ getSourceForDefaultCase(optional, request) {
     }
 ```
 
-##总结###
+## 总结
 上面的解析写的比较乱，而且有很多文章内的引用，下次可以考虑使用锚点进行页内跳转。
 dll 的工作流程大概是，通过 DllPlugin 打包 library 获得 js 和 manifest 文件，使用时通过 DllReferencePlugin 读取 manifest 文件，解析 dll 中包含的子模块名等信息。
 DllReferencePlugin 内部，创建 ExternalModule，把 dll 加入到 externals 中，然后通过 DelegatedModule，把对实际文件的 require 请求，代理到 dll 包中。
