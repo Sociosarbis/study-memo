@@ -5,15 +5,20 @@
   
 
   
-  <title>Archives: 2019/3 | a house in the woods</title>
+  <title>像redux这样的状态管理库是用来做什么的 | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/archives/2019/03/index.html">
+  <meta name="description" content="前言在这的很长一段之前，我一直都没有理解到为什么大型项目会需要redux这样状态管理库。因为我以前一直在觉得，redux做的无非只是把祖先的state无需通过一层层parent to child的props传递提供便利（这个功能react的context就可以做到了）和让改变数据的动作更加清晰而已。加上redux那一堆麻烦的定义文件，所以造成一直以来都不太愿意把数据放到store里面去。但是我的认">
+<meta name="keywords" content="redux,store,react,performance">
+<meta property="og:type" content="article">
+<meta property="og:title" content="像redux这样的状态管理库是用来做什么的">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2019/05/12/what-does-redux-like-state-management-library-do/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言在这的很长一段之前，我一直都没有理解到为什么大型项目会需要redux这样状态管理库。因为我以前一直在觉得，redux做的无非只是把祖先的state无需通过一层层parent to child的props传递提供便利（这个功能react的context就可以做到了）和让改变数据的动作更加清晰而已。加上redux那一堆麻烦的定义文件，所以造成一直以来都不太愿意把数据放到store里面去。但是我的认">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2019-05-28T10:58:38.941Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="像redux这样的状态管理库是用来做什么的">
+<meta name="twitter:description" content="前言在这的很长一段之前，我一直都没有理解到为什么大型项目会需要redux这样状态管理库。因为我以前一直在觉得，redux做的无非只是把祖先的state无需通过一层层parent to child的props传递提供便利（这个功能react的context就可以做到了）和让改变数据的动作更加清晰而已。加上redux那一堆麻烦的定义文件，所以造成一直以来都不太愿意把数据放到store里面去。但是我的认">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -62,59 +67,58 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2019/03/31/introduction-of-webpack-dll-plugin/" class="archive-article-date">
-  <time datetime="2019-03-31T02:57:16.353Z" itemprop="datePublished">Mar 31</time>
+        <section id="main"><article id="post-what-does-redux-like-state-management-library-do" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2019/05/12/what-does-redux-like-state-management-library-do/" class="article-date">
+  <time datetime="2019-05-12T13:23:04.732Z" itemprop="datePublished">2019-05-12</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2019/03/31/introduction-of-webpack-dll-plugin/">webpack.DllPlugin简单介绍配合部分源码</a>
+    <h1 class="article-title" itemprop="name">
+      像redux这样的状态管理库是用来做什么的
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2019/03/10/compile_cpp_from_command_line/" class="archive-article-date">
-  <time datetime="2019-03-10T11:43:30.615Z" itemprop="datePublished">Mar 10</time>
-</a>
+    <div class="article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2019/03/10/compile_cpp_from_command_line/">使用命令行编译C++</a>
-    </h1>
-  
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>在这的很长一段之前，我一直都没有理解到为什么大型项目会需要redux这样状态管理库。因为我以前一直在觉得，redux做的无非只是把祖先的state无需通过一层层parent to child的props传递提供便利（这个功能react的context就可以做到了）和让改变数据的动作更加清晰而已。加上redux那一堆麻烦的定义文件，所以造成一直以来都不太愿意把数据放到store里面去。但是我的认识在这周发生了转变。</p>
+<h3 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h3><p>这个转变源自于我需要做一个在同一个父组件下跟随子组件B进行view更新的子组件A。不使用store的情况就是父组件得到子组件B的变化，然后通过props传给子组件A，让子组件进行更新。可是，问题出现在，父组件也有因为涉及不当的原因，其render函数里包含了许许多多的子组件（许许多多是一个抽象的数字）。假如通过props传给子组件A，那么必然触发父组件的render方法，那么就需要一个个地去diff其下的这些子组件。这无疑是会损耗大量的性能。那么怎么解决呢。</p>
+<p><strong>一个直觉的类比，我们可以像直接控制DOM一样直接让子组件A更新</strong><br>具体的做法，可以是通过ref获取到子组件A的实例，直接通过子组件A.setState的方式更新。虽然这种方法简单高效，但是这在react文档中是不推荐的，因为他让组件的关系变得复杂且难以预测，用某个学到的词来概括（反模式的），其实我的感觉就是这样子不够一般化，因为需要修改组件内部（这个跟react不提倡使用extends的方法创建组件的理由可能是一致的），添加ref。正确的模式其实还是应该通过传递props来引起更新。但是就会出现上面说的性能问题。这时候就要redux(准确上来讲是react-redux)的出场了。</p>
+<p><strong>connect组件</strong><br>connect组件是react-redux提供的一个wrapper，包裹我们设计的组件形成一个高阶组件。这个wrapper主要的工作是监听store的变化，当store变化时，触发onStateUpate方法，通过用户定义好的mapStateToProps和mapDispatchToProps的方法从store中提取需要的数据设置到wrapper的state上，并在render时与非从store推导的props进行merge作为最终的props传到我们设计的组件中(如上面的子组件A)</p>
+<p><strong>另一个启示</strong><br>上面的（暂且叫做）精准更新的需要的一个原因是避免有大量子Element的父组件，进行重新渲染。注意到大量这个词，也就是说，我们也可以通过减少父组件下子Element的数量，来提高性能。一个立刻能想到的可行性方案是，当父组件render的vdom间，所依赖的数据项有明显分解时，例如有分别依赖state.mails和state.friends产生列表项的，这时我们可以封装这两个列表项为两个组件并作为pureComponent，这样例如我们更新mails的时候就可以不进入friends列表项的render和HTMLElement diff阶段了了。</p>
 
-    </header>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/05/12/what-does-redux-like-state-management-library-do/" data-id="cjw7ouf9c0000kgu14bdszish" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/store/">store</a></li></ul>
+
+    </footer>
   </div>
-</article>
+  
+    
+<nav id="article-nav">
   
   
-    </div></section>
+    <a href="/study-memo/2019/03/31/introduction-of-webpack-dll-plugin/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">webpack.DllPlugin简单介绍配合部分源码</div>
+    </a>
   
+</nav>
 
+  
+</article>
 
 </section>
         

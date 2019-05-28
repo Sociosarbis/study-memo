@@ -1,0 +1,16 @@
+.post-inner-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    list-style: none;
+    z-index: 10;
+}
+.post-inner-nav>ul>li {
+    margin-left: 0;
+}
+.post-inner-nav li {
+    margin-left: 1em;
+}
+.post-inner-nav li a{
+    text-decoration: none;
+}
