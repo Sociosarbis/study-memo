@@ -298,7 +298,7 @@ source(depTemplates, runtime) {
 }
 ```
 
-**_ExternalModule_**
+### ExternalModule
 说了 dll,其实也要顺带说一下 ExternalModule 的原理。概括来说就是把 require 模块的内容不直接写到 bundle 中，而是把他的引用作为 module 的 exports
 具体可以看下下面的源码：
 lib/ExternalModule.js
