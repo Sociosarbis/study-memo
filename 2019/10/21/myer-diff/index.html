@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Myer&#39;s Diff algorithm | a house in the woods</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言本文主要参考自Myers’ Diff Algorithm(1)（算法原理）和 Myers’ Diff Algorithm(2)（优化后的算法）这两篇文章， 根据自己的理解对算法步骤进行说明。原论文（http://www.grantjenks.com/wiki/_media/ideas:diffalgorithmlcs.pdf）。在本文中出现的名词如：  snake diagonal k（对角线">
+<meta name="keywords" content="algorithm,diff">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Myer&#39;s Diff algorithm">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2019/10/21/myer-diff/index.html">
+<meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言本文主要参考自Myers’ Diff Algorithm(1)（算法原理）和 Myers’ Diff Algorithm(2)（优化后的算法）这两篇文章， 根据自己的理解对算法步骤进行说明。原论文（http://www.grantjenks.com/wiki/_media/ideas:diffalgorithmlcs.pdf）。在本文中出现的名词如：  snake diagonal k（对角线">
+<meta property="og:locale" content="zh">
+<meta property="og:image" content="https://latex.codecogs.com/gif.latex?k%20%5Cin%20%5B-D%2C-D%20+%202%2C...%2CD%5D">
+<meta property="og:image" content="https://latex.codecogs.com/gif.latex?D_%7Bbackward%7D%20%3D%20D_%7Bforward%7D%20-%201">
+<meta property="og:image" content="https://latex.codecogs.com/gif.latex?D_%7Bbackward%7D%20%3D%20D_%7Bforward%7D%20">
+<meta property="og:updated_time" content="2019-10-21T14:45:12.079Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Myer&#39;s Diff algorithm">
+<meta name="twitter:description" content="前言本文主要参考自Myers’ Diff Algorithm(1)（算法原理）和 Myers’ Diff Algorithm(2)（优化后的算法）这两篇文章， 根据自己的理解对算法步骤进行说明。原论文（http://www.grantjenks.com/wiki/_media/ideas:diffalgorithmlcs.pdf）。在本文中出现的名词如：  snake diagonal k（对角线">
+<meta name="twitter:image" content="https://latex.codecogs.com/gif.latex?k%20%5Cin%20%5B-D%2C-D%20+%202%2C...%2CD%5D">
+  
+    <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/study-memo/css/style.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/study-memo/" id="logo">a house in the woods</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/study-memo/">Home</a>
+        
+          <a class="main-nav-link" href="/study-memo/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/study-memo/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://sociosarbis.github.io/study-memo"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-myer-diff" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2019/10/21/myer-diff/" class="article-date">
+  <time datetime="2019-10-21T14:07:44.329Z" itemprop="datePublished">2019-10-21</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Myer&#39;s Diff algorithm
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文主要参考自<a href="http://simplygenius.net/Article/DiffTutorial1" target="_blank" rel="noopener">Myers’ Diff Algorithm(1)</a>（算法原理）和</p>
+<p><a href="http://simplygenius.net/Article/DiffTutorial2" target="_blank" rel="noopener">Myers’ Diff Algorithm(2)</a>（优化后的算法）这两篇文章，</p>
+<p>根据自己的理解对算法步骤进行说明。原论文（<a href="http://www.grantjenks.com/wiki/_media/ideas:diffalgorithmlcs.pdf）。" target="_blank" rel="noopener">http://www.grantjenks.com/wiki/_media/ideas:diffalgorithmlcs.pdf）。</a><br><strong>在本文中出现的名词如：</strong></p>
+<ul>
+<li><strong>snake</strong></li>
+<li><strong>diagonal k（对角线k）</strong></li>
+<li><strong>edit graph（编辑图）</strong></li>
+<li><strong>furthest reaching point（最远到达点，实则为编辑图的横坐标）</strong></li>
+<li><strong>V[k]（记录对角线k的最远到达点）</strong></li>
+<li><strong>edit script（编辑路径）</strong><br>可在上述的参考文章中找到说明。<br><strong>算法的思想建基于:</strong></li>
+</ul>
+<ol>
+<li>最短编辑距离的路径会包含一条有最远到达点的对角线</li>
+<li>编辑路径D（D表示编辑长度）与对角线k的关系为<img src="https://latex.codecogs.com/gif.latex?k%20%5Cin%20%5B-D%2C-D%20&plus;%202%2C...%2CD%5D" alt=""><br><strong>注意编辑图的（0, 0）点不表示字符串A和B各自的第一个字符, 而是表示没有任何字符编辑的出发点</strong></li>
+</ol>
+<h3 id="algorithm1"><a href="#algorithm1" class="headerlink" title="algorithm1"></a>algorithm1</h3><p>初步的算法<strong>（在文章1中）</strong>就是从0开始到最大D循环，从每个D中拿到对角线k的序列，进行INSERT（B向前一步）或DELETE（A向前一步）的编辑。</p>
+<p>看看后面的字符是否相同，如果相同则A和B的各向前一步；</p>
+<p>如果不同则把当前的横坐标记回到V[k]中。如当前坐标到达边界，则当前的D就为最短编辑路径。</p>
+<h3 id="algorithm2"><a href="#algorithm2" class="headerlink" title="algorithm2"></a>algorithm2</h3><ol start="2">
+<li><p>在文章2中介绍了1中的算法的优化，它包含了分治的思想。<br>概括地说是</p>
+<ol>
+<li>记A B长度的差delta为N - M</li>
+<li>从起始点正向执行1中的算法和从终点反向执行，它们的V[k]分别记为VForward[k]和VBackward[k]</li>
+<li>当VForward[k] &gt; VBackward[k]时停止迭代，同时需要满足当delta为奇数时，<img src="https://latex.codecogs.com/gif.latex?D_%7Bbackward%7D%20%3D%20D_%7Bforward%7D%20-%201" alt="">,迭代要在Forward处结束；<br>当delta为偶数时<img src="https://latex.codecogs.com/gif.latex?D_%7Bbackward%7D%20%3D%20D_%7Bforward%7D%20" alt="">，迭代要在Backward时结束。</li>
+<li>结束3中的最后一次迭代的路径称为middle snake，在原论文中证明middle snake为最短编辑路径的子路径</li>
+<li>根据middle snake（左上角和上一次的出发点）和（右下角和上一次的终点）把编辑图分成左上和右下两个子图，这两个子问题。</li>
+</ol>
+<p>再重复执行这个这个算法，直到子问题的D不大于1，或者任意子字符串的长度等于0为止。</p>
+</li>
+<li><p>下面是应用算法2以求出从A到B字符串编辑操作的代码。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 操作类型</span></span><br><span class="line"><span class="keyword">const</span> RETAIN = <span class="string">'retain'</span> <span class="comment">// 保留A和B的字符</span></span><br><span class="line"><span class="keyword">const</span> INSERT = <span class="string">'insert'</span> <span class="comment">// 插入B字符，在图中表示为垂直移动</span></span><br><span class="line"><span class="keyword">const</span> DELETE = <span class="string">'delete'</span> <span class="comment">// 删除A字符，在途中表示为水平移动</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">calcMiddleSnake</span>(<span class="params">A, a0, N, B, b0, M, VForward, VBackward</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> delta = N - M</span><br><span class="line">  <span class="keyword">const</span> maxD = <span class="built_in">Math</span>.floor((N + M + <span class="number">1</span>) / <span class="number">2</span>)</span><br><span class="line">  <span class="comment">//初始化V序列</span></span><br><span class="line">  VForward[<span class="number">1</span>] = <span class="number">0</span></span><br><span class="line">  <span class="comment">//初始的时候从delta - 1的对角线开始</span></span><br><span class="line">  VBackward[N - M - <span class="number">1</span>] = N</span><br><span class="line">  <span class="keyword">const</span> isOdd = <span class="built_in">Boolean</span>(delta &amp; <span class="number">1</span>)</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> d = <span class="number">0</span>; d &lt;= maxD; d++) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> k = -d; k &lt;= d; k += <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="comment">// k为-d时必为向下，k为d时必为向右，其余情况选择V序列较大的方向，这里的方向表示从Kprev到K</span></span><br><span class="line">      <span class="keyword">const</span> down = k === -d || (k !== d &amp;&amp; VForward[k - <span class="number">1</span>] &lt; VForward[k + <span class="number">1</span>])</span><br><span class="line">      <span class="keyword">const</span> kPrev = down ? k + <span class="number">1</span> : k - <span class="number">1</span></span><br><span class="line">      <span class="keyword">const</span> startX = VForward[kPrev]</span><br><span class="line">      <span class="keyword">const</span> startY = startX - kPrev</span><br><span class="line">      <span class="keyword">const</span> midX = down ? startX : startX + <span class="number">1</span></span><br><span class="line">      <span class="keyword">const</span> midY = midX - k</span><br><span class="line">      <span class="keyword">let</span> endX = midX</span><br><span class="line">      <span class="keyword">let</span> endY = midY</span><br><span class="line">      <span class="keyword">while</span> (endX &lt; N &amp;&amp; endY &lt; M &amp;&amp; A[a0 + endX] === B[b0 + endY]) &#123;</span><br><span class="line">        endX++</span><br><span class="line">        endY++</span><br><span class="line">      &#125;</span><br><span class="line">      VForward[k] = endX</span><br><span class="line">      <span class="comment">// 当delta为奇数时，运行到这里才有反向d = 正向d - 1，才需要返回middleSnake，</span></span><br><span class="line">      <span class="comment">// k &lt; delta - (d - 1) || k &gt; delta + (d - 1)是保证正向k没有超出上一轮反向k的范围</span></span><br><span class="line">      <span class="keyword">if</span> (!isOdd || k &lt; delta - (d - <span class="number">1</span>) || k &gt; delta + (d - <span class="number">1</span>)) <span class="keyword">continue</span></span><br><span class="line">      <span class="keyword">if</span> (VForward[k] &lt; VBackward[k]) <span class="keyword">continue</span></span><br><span class="line">      <span class="keyword">return</span> [<span class="number">2</span> * d - <span class="number">1</span>, down, startX, startY, midX, midY, endX, endY]</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 正向是以k = 0为中心，反向是以k = delta为中心</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> k = -d + delta; k &lt;= d + delta; k += <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="comment">// 方向选择逻辑与正向相近</span></span><br><span class="line">      <span class="keyword">const</span> up = k === d + delta || (k !== -d + delta &amp;&amp; VBackward[k - <span class="number">1</span>] &lt; VBackward[k + <span class="number">1</span>])</span><br><span class="line">      <span class="keyword">const</span> kPrev = up ? k - <span class="number">1</span> : k + <span class="number">1</span></span><br><span class="line">      <span class="keyword">const</span> startX = VBackward[kPrev]</span><br><span class="line">      <span class="keyword">const</span> startY = startX - kPrev</span><br><span class="line">      <span class="keyword">const</span> midX = up ? startX : startX - <span class="number">1</span></span><br><span class="line">      <span class="keyword">const</span> midY = midX - k</span><br><span class="line">      <span class="keyword">let</span> endX = midX</span><br><span class="line">      <span class="keyword">let</span> endY = midY</span><br><span class="line">      <span class="keyword">while</span> (endX &gt; <span class="number">0</span> &amp;&amp; endY &gt; <span class="number">0</span> &amp;&amp; A[a0 + endX - <span class="number">1</span>] === B[b0 + endY - <span class="number">1</span>]) &#123;</span><br><span class="line">        endX--</span><br><span class="line">        endY--</span><br><span class="line">      &#125;</span><br><span class="line">      VBackward[k] = endX</span><br><span class="line">      <span class="comment">// 当delta为偶数时，运行到这里才有反向d = 正向，才需要返回middleSnake，</span></span><br><span class="line">      <span class="comment">// k &lt; -d || k &gt; d是保证反向k没有超出这一轮正向k的范围</span></span><br><span class="line">      <span class="keyword">if</span> (isOdd || k &lt; -d || k &gt; d) <span class="keyword">continue</span></span><br><span class="line">      <span class="keyword">if</span> (VBackward[k] &gt; VForward[k]) <span class="keyword">continue</span></span><br><span class="line">      <span class="keyword">return</span> [<span class="number">2</span> * d, up, endX, endY, midX, midY, startX, startY]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">innerDiff</span>(<span class="params">A, a0, N, B, b0, M, VForward, VBackward</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">let</span> newOps = []</span><br><span class="line">  <span class="keyword">if</span> (M === <span class="number">0</span> &amp;&amp; N &gt; <span class="number">0</span>) newOps = [[DELETE, N]]</span><br><span class="line">  <span class="keyword">if</span> (N === <span class="number">0</span> &amp;&amp; M &gt; <span class="number">0</span>) newOps = [[INSERT, M]]</span><br><span class="line">  <span class="keyword">if</span> (M === <span class="number">0</span> || N === <span class="number">0</span>) <span class="keyword">return</span> newOps</span><br><span class="line">  <span class="keyword">const</span> middleSnake = calcMiddleSnake(A, a0, N, B, b0, M, VForward, VBackward)</span><br><span class="line">  <span class="keyword">const</span> startX = middleSnake[<span class="number">2</span>]</span><br><span class="line">  <span class="keyword">const</span> startY = middleSnake[<span class="number">3</span>]</span><br><span class="line">  <span class="keyword">const</span> midX = middleSnake[<span class="number">4</span>]</span><br><span class="line">  <span class="keyword">const</span> midY = middleSnake[<span class="number">5</span>]</span><br><span class="line">  <span class="keyword">const</span> endX = middleSnake[<span class="number">6</span>]</span><br><span class="line">  <span class="keyword">const</span> endY = middleSnake[<span class="number">7</span>]</span><br><span class="line">  <span class="keyword">const</span> D = middleSnake[<span class="number">0</span>]</span><br><span class="line">  <span class="keyword">const</span> isVertical = middleSnake[<span class="number">1</span>]</span><br><span class="line">  <span class="keyword">const</span> editOp = isVertical ? INSERT : DELETE</span><br><span class="line">  <span class="keyword">const</span> middleEditOps = []</span><br><span class="line">  <span class="comment">//确保点坐标的位置符合x:[0, N],y:[0, M]，才去添加middle snake的edit script</span></span><br><span class="line">  <span class="keyword">if</span> (midY &lt;= M &amp;&amp; startX &gt;= <span class="number">0</span> &amp;&amp; midX &lt;= N &amp;&amp; startY &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> editLength1 = isVertical ? midY - startY : midX - startX</span><br><span class="line">    <span class="keyword">if</span> (editLength1) middleEditOps.push([(midY - startY === midX - startX) ? RETAIN : editOp, editLength1])</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (midY &gt;= <span class="number">0</span> &amp;&amp; endX &lt;= N &amp;&amp; midX &gt;= <span class="number">0</span> &amp;&amp; endY &lt;= M) &#123;</span><br><span class="line">    <span class="keyword">let</span> editLength2 = isVertical ? endY - midY : endX - midX</span><br><span class="line">    <span class="keyword">if</span> (editLength2) middleEditOps.push([(endY - midY === endX - midX) ? RETAIN : editOp, editLength2])</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (D &gt; <span class="number">1</span>) &#123;</span><br><span class="line">    <span class="comment">// diff左上角的编辑图</span></span><br><span class="line">    newOps = innerDiff(A, a0, startX, B, b0, startY, VForward, VBackward)</span><br><span class="line">    newOps.push(...middleEditOps)</span><br><span class="line">    <span class="comment">// diff右下角角的编辑图</span></span><br><span class="line">    newOps.push(...innerDiff(A, a0 + endX, N - endX, B, b0 + endY, M - endY, VForward, VBackward))</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (D === <span class="number">0</span>) newOps.push(...middleEditOps)</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (startX) newOps.push([RETAIN, startX])</span><br><span class="line">    newOps.push(...middleEditOps)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> newOps</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">diff</span>(<span class="params">A, B</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> innerDiff(A, <span class="number">0</span>, A.length, B, <span class="number">0</span>, B.length, [], [])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// test</span></span><br><span class="line">diff(<span class="string">'react is the best framework'</span>, <span class="string">'preact is the best library'</span>)</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">output:</span></span><br><span class="line"><span class="comment">0: ["insert", 1] insert 'p'</span></span><br><span class="line"><span class="comment">1: ["retain", 18] retain 'react is the best '</span></span><br><span class="line"><span class="comment">2: ["insert", 1] insert 'l'</span></span><br><span class="line"><span class="comment">3: ["insert", 1] insert 'i'</span></span><br><span class="line"><span class="comment">4: ["insert", 1] insert 'b'</span></span><br><span class="line"><span class="comment">5: ["delete", 1] delete 'f'</span></span><br><span class="line"><span class="comment">6: ["retain", 2] retain 'ra'</span></span><br><span class="line"><span class="comment">7: ["delete", 1] delete 'm'</span></span><br><span class="line"><span class="comment">8: ["delete", 2] delete 'ew'</span></span><br><span class="line"><span class="comment">9: ["delete", 1] delete 'o'</span></span><br><span class="line"><span class="comment">10: ["retain", 1] retain 'r'</span></span><br><span class="line"><span class="comment">11: ["insert", 1] insert 'y'</span></span><br><span class="line"><span class="comment">12: ["delete", 1] delete 'k'</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/10/21/myer-diff/" data-id="ck20j9m6j0008iou1klaedye3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/diff/">diff</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2019/05/12/what-does-redux-like-state-management-library-do/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">像redux这样的状态管理库是用来做什么的</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/algorithm/" style="font-size: 20px;">algorithm</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/performance/" style="font-size: 10px;">performance</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/template/" style="font-size: 10px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/vue/" style="font-size: 20px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/study-memo/2019/10/21/myer-diff/">Myer&#39;s Diff algorithm</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2019/05/12/what-does-redux-like-state-management-library-do/">像redux这样的状态管理库是用来做什么的</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2019/03/31/introduction-of-webpack-dll-plugin/">webpack.DllPlugin简单介绍配合部分源码</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2019/03/10/compile_cpp_from_command_line/">使用命令行编译C++</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/">在Vue的template里面使用临时变量</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2019 Sociosarbis<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/study-memo/" class="mobile-nav-link">Home</a>
+  
+    <a href="/study-memo/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/study-memo/fancybox/jquery.fancybox.css">
+  <script src="/study-memo/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/study-memo/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
