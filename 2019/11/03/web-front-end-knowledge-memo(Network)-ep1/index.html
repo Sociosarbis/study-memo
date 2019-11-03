@@ -5,15 +5,25 @@
   
 
   
-  <title>Tag: CSS | a house in the woods</title>
+  <title>web前端知识学习笔记-网络篇(1) | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/tags/CSS/index.html">
+  <meta name="description" content="HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。（我的理解是无状态协议表示，每次请求应答都是独立的，不需要保证是否按顺序收发，不会维护client和server的状态，单次请求应答完成以后自动结束） 一次HTTP操作简化流程 发送HTTP请求（浏览器输入地址或XHR等方式） 通过DNS获取请求地址对应的IP地址 通过TCP/IP，与目标地址建立起TCP连接 TCP连接发送客">
+<meta name="keywords" content="interview,HTTP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="web前端知识学习笔记-网络篇(1)">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。（我的理解是无状态协议表示，每次请求应答都是独立的，不需要保证是否按顺序收发，不会维护client和server的状态，单次请求应答完成以后自动结束） 一次HTTP操作简化流程 发送HTTP请求（浏览器输入地址或XHR等方式） 通过DNS获取请求地址对应的IP地址 通过TCP/IP，与目标地址建立起TCP连接 TCP连接发送客">
 <meta property="og:locale" content="zh">
+<meta property="og:image" content="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/css/images/http-request-format.png">
+<meta property="og:image" content="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/css/images/http-response-format.png">
+<meta property="og:image" content="https://latex.codecogs.com/png.latex?packet_%7Bn%20-%201%7D%20%3D%20header_%7Bn%20-%201%7D%20+%20packet_%7Bn%7D">
+<meta property="og:image" content="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/css/images/UDP_encapsulation.png">
+<meta property="og:updated_time" content="2019-11-03T14:58:43.640Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="web前端知识学习笔记-网络篇(1)">
+<meta name="twitter:description" content="HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。（我的理解是无状态协议表示，每次请求应答都是独立的，不需要保证是否按顺序收发，不会维护client和server的状态，单次请求应答完成以后自动结束） 一次HTTP操作简化流程 发送HTTP请求（浏览器输入地址或XHR等方式） 通过DNS获取请求地址对应的IP地址 通过TCP/IP，与目标地址建立起TCP连接 TCP连接发送客">
+<meta name="twitter:image" content="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/css/images/http-request-format.png">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,40 +70,89 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2019/11/02/web-front-end-knowledge-memo(CSS)-ep1/" class="archive-article-date">
-  <time datetime="2019-11-02T07:59:25.623Z" itemprop="datePublished">Nov 2</time>
+        <section id="main"><article id="post-web-front-end-knowledge-memo(Network)-ep1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/" class="article-date">
+  <time datetime="2019-11-03T13:03:28.048Z" itemprop="datePublished">2019-11-03</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2019/11/02/web-front-end-knowledge-memo(CSS)-ep1/">web前端知识学习笔记-CSS篇(1)</a>
+    <h1 class="article-title" itemprop="name">
+      web前端知识学习笔记-网络篇(1)
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="HTTP处于TCP-IP（互联网协议套件）的应用层，是一种无状态的协议。"><a href="#HTTP处于TCP-IP（互联网协议套件）的应用层，是一种无状态的协议。" class="headerlink" title="HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。"></a>HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。</h3><p><strong>（我的理解是无状态协议表示，每次请求应答都是独立的，不需要保证是否按顺序收发，不会维护client和server的状态，单次请求应答完成以后自动结束）</strong></p>
+<h3 id="一次HTTP操作简化流程"><a href="#一次HTTP操作简化流程" class="headerlink" title="一次HTTP操作简化流程"></a>一次HTTP操作简化流程</h3><ol>
+<li>发送HTTP请求（浏览器输入地址或XHR等方式）</li>
+<li>通过DNS获取请求地址对应的IP地址</li>
+<li>通过TCP/IP，与目标地址建立起TCP连接</li>
+<li>TCP连接发送客户端的HTTP请求报文</li>
+<li>客户端通过TCP连接发送HTTP应答报文</li>
+<li>TCP连接关闭，如果HTTP请求报头中设置了<code>Connection:keep-alive</code>，则TCP会继续保持连接</li>
+</ol>
+<p><strong>值得注意的是keep-alive虽然是通过HTTP的报头设置的，但是实际执行的是在TCP中，所以不与HTTP是无状态的冲突</strong></p>
+<p><strong>短连接</strong>是无<code>keep-alive</code>，请求完成以后，TCP自动关闭；<br><strong>长连接</strong>则相反。</p>
+<p><strong>管线化（with pipelining）</strong>是指长连接中客户端无需等待上一次请求完成，再去做第二次请求，<strong>非管线化（without pipelining）</strong>则需要做这样的等待。<br><em>但实际上没有看过非管线化的情况（如果有，还请热心告诉我）</em></p>
+<h3 id="格式示意图"><a href="#格式示意图" class="headerlink" title="格式示意图"></a>格式示意图</h3><p>请求报文：<br><img src="css/images/http-request-format.png" alt=""></p>
+<p>响应报文：<br><img src="css/images/http-response-format.png" alt=""><br><a href="https://juejin.im/post/5ad4465d6fb9a028da7d0117" target="_blank" rel="noopener">图片来源</a></p>
+<h3 id="常见的响应的状态码"><a href="#常见的响应的状态码" class="headerlink" title="常见的响应的状态码"></a>常见的响应的状态码</h3><p><strong>200</strong>(OK) <strong>客户端发过来的数据被正常处理</strong></p>
+<p><strong>204</strong>(Not Content) <strong>正常响应，没有实体</strong></p>
+<p><strong>206</strong>(Partial Content) <strong>范围请求，返回部分数据，响应报文中由Content-Range指定实体内容</strong></p>
+<hr>
+<p><strong>301</strong>(Moved Permanently) <strong>永久重定向</strong></p>
+<p><strong>302</strong>(Found) <strong>临时重定向，重定向后的请求方法可作改变</strong></p>
+<p><strong>303</strong>(See Other) <strong>重定向后的请求方法变为GET</strong></p>
+<p><strong>304</strong>(Not Modified) <strong>状态未改变， 配合(If-Match、If-Modified-Since、If-None_Match、If-Range、If-Unmodified-Since)，与<em>HTTP缓存</em>相关</strong></p>
+<p><strong>307</strong>(Temporary Redirect) <strong>临时重定向，不应改变其请求方法</strong></p>
+<hr>
+<p><strong>400</strong>(Bad Request) <strong>请求报文语法错误</strong></p>
+<p><strong>401</strong>(unauthorized) <strong>需要认证</strong></p>
+<p><strong>403</strong>(Forbidden) <strong>服务器拒绝访问对应的资源</strong></p>
+<p><strong>404</strong>(Not Found) <strong>服务器上无法找到资源</strong></p>
+<p><strong><em>401跟403不同的地方是，401可能是因为你没有登录，而403表示可能你没有相关的权限，有一次我通过npm发布包，错误提示403，我还错误地想是不是因为我没有登录呢，实际上是我的包名含有private scope，而我没有权限导致的</em></strong></p>
+<hr>
+<p><strong>500</strong>(Internal Server Error)<strong>服务器故障</strong></p>
+<p><strong>503</strong>(Service Unavailable) <strong>服务器处于超负载或正在停机维护</strong></p>
+<h4 id="从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP-IP层间传输中，大致存在这样的迭代关系"><a href="#从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP-IP层间传输中，大致存在这样的迭代关系" class="headerlink" title="从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP/IP层间传输中，大致存在这样的迭代关系"></a>从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP/IP层间传输中，大致存在这样的迭代关系</h4><p>(<strong>n</strong>表示层序)</p>
+<p><img src="https://latex.codecogs.com/png.latex?packet_%7Bn%20-%201%7D%20%3D%20header_%7Bn%20-%201%7D%20&plus;%20packet_%7Bn%7D" alt=""></p>
+<p><img src="css/images/UDP_encapsulation.png" alt=""></p>
+<p><em>本文内容大部分基于<a href="">5分钟让你明白HTTP协议</a><a href="https://juejin.im/post/5ad4465d6fb9a028da7d0117" target="_blank" rel="noopener">https://juejin.im/post/5ad4465d6fb9a028da7d0117</a></em></p>
 
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/" data-id="ck2j41eix000058u1finzi36v" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/interview/">interview</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep3/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">web前端知识学习笔记-JS篇(3)</div>
+    </a>
+  
+</nav>
+
+  
+</article>
 
 </section>
         
