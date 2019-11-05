@@ -136,4 +136,25 @@ poll() {
      return item
 }
 ```
+***奇怪的是根据下面代码来源的资料，heap sort的空间复杂度是O(1)，可是上面的实现方式是需要创建两个数组的，***
+***按上面的实现应该是O(n)才对。后面经过搜索，得知heap sort实际上是可以原地实现的。实现如下：***
+```javascript
+add() {
+  for (let i = 1;i < arr.length;i++) {
+    // 从i到0构建**最大堆**
+    heapifyUp(i)
+  }
+}
+poll() {
+  for (let i = arr.length - 1;i >= 0;i++) {
+    // 让i与0交换
+    swap(i, 0)
+    // 调整堆至i - 1处，交换以后的i排除在heapifyDown的操作范围内
+    heapifyDown(i - 1)
+  }
+}
+// 注意上面的是最大堆，因为这样取出的时候可以把堆顶的这个最大值与末尾的元素进行交换
+// 最后结果能够从小到大排列
+// 上面写的都是伪代码，力求把逻辑简洁地表述出来
+```
 [代码来源](https://github.com/trekhleb/javascript-algorithms)
