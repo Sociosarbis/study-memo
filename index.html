@@ -91,7 +91,8 @@
 <li>最大矩形等于<strong>以各柱形为最低高度时</strong>围绕它形成的最大区间的矩形大小的最大值</li>
 <li>每个柱形形成的区间的<strong>左右边界</strong>为<strong>小于它高度且最靠近</strong>的矩形或者<strong>柱形数组的边界</strong></li>
 </ol>
-<p><strong>为了求出这些区间，题解中使用了一个栈结构</strong><br><strong>栈具有如下性质</strong></p>
+<p><strong>为了求出这些区间，题解中使用了一个栈结构</strong></p>
+<p><strong>栈具有如下性质</strong></p>
 <ol>
 <li>每个柱形的index都会压入栈中</li>
 <li>柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index所指向的高度<strong>保持依次增大</strong>的性质。</li>

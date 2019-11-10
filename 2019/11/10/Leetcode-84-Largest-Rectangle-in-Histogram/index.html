@@ -7,18 +7,18 @@
   
   <title>Leetcode 84 Largest Rectangle in Histogram分析 | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="题目链接 根据题解得到的思路：  矩形大小等于区间内最低柱形高度乘以区间的大小 最大矩形等于以各柱形为最低高度时围绕它形成的最大区间的矩形大小的最大值 每个柱形形成的区间的左右边界为小于它高度且最靠近的矩形或者柱形数组的边界  为了求出这些区间，题解中使用了一个栈结构栈具有如下性质  每个柱形的index都会压入栈中 柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index所">
+  <meta name="description" content="题目链接 根据题解得到的思路：  矩形大小等于区间内最低柱形高度乘以区间的大小 最大矩形等于以各柱形为最低高度时围绕它形成的最大区间的矩形大小的最大值 每个柱形形成的区间的左右边界为小于它高度且最靠近的矩形或者柱形数组的边界  为了求出这些区间，题解中使用了一个栈结构 栈具有如下性质  每个柱形的index都会压入栈中 柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index">
 <meta name="keywords" content="algorithm,leetcode,stack">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Leetcode 84 Largest Rectangle in Histogram分析">
 <meta property="og:url" content="https://sociosarbis.github.io/study-memo/2019/11/10/Leetcode-84-Largest-Rectangle-in-Histogram/index.html">
 <meta property="og:site_name" content="a house in the woods">
-<meta property="og:description" content="题目链接 根据题解得到的思路：  矩形大小等于区间内最低柱形高度乘以区间的大小 最大矩形等于以各柱形为最低高度时围绕它形成的最大区间的矩形大小的最大值 每个柱形形成的区间的左右边界为小于它高度且最靠近的矩形或者柱形数组的边界  为了求出这些区间，题解中使用了一个栈结构栈具有如下性质  每个柱形的index都会压入栈中 柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index所">
+<meta property="og:description" content="题目链接 根据题解得到的思路：  矩形大小等于区间内最低柱形高度乘以区间的大小 最大矩形等于以各柱形为最低高度时围绕它形成的最大区间的矩形大小的最大值 每个柱形形成的区间的左右边界为小于它高度且最靠近的矩形或者柱形数组的边界  为了求出这些区间，题解中使用了一个栈结构 栈具有如下性质  每个柱形的index都会压入栈中 柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index">
 <meta property="og:locale" content="zh">
-<meta property="og:updated_time" content="2019-11-10T15:16:42.673Z">
+<meta property="og:updated_time" content="2019-11-10T15:18:20.105Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Leetcode 84 Largest Rectangle in Histogram分析">
-<meta name="twitter:description" content="题目链接 根据题解得到的思路：  矩形大小等于区间内最低柱形高度乘以区间的大小 最大矩形等于以各柱形为最低高度时围绕它形成的最大区间的矩形大小的最大值 每个柱形形成的区间的左右边界为小于它高度且最靠近的矩形或者柱形数组的边界  为了求出这些区间，题解中使用了一个栈结构栈具有如下性质  每个柱形的index都会压入栈中 柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index所">
+<meta name="twitter:description" content="题目链接 根据题解得到的思路：  矩形大小等于区间内最低柱形高度乘以区间的大小 最大矩形等于以各柱形为最低高度时围绕它形成的最大区间的矩形大小的最大值 每个柱形形成的区间的左右边界为小于它高度且最靠近的矩形或者柱形数组的边界  为了求出这些区间，题解中使用了一个栈结构 栈具有如下性质  每个柱形的index都会压入栈中 柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -94,7 +94,8 @@
 <li>最大矩形等于<strong>以各柱形为最低高度时</strong>围绕它形成的最大区间的矩形大小的最大值</li>
 <li>每个柱形形成的区间的<strong>左右边界</strong>为<strong>小于它高度且最靠近</strong>的矩形或者<strong>柱形数组的边界</strong></li>
 </ol>
-<p><strong>为了求出这些区间，题解中使用了一个栈结构</strong><br><strong>栈具有如下性质</strong></p>
+<p><strong>为了求出这些区间，题解中使用了一个栈结构</strong></p>
+<p><strong>栈具有如下性质</strong></p>
 <ol>
 <li>每个柱形的index都会压入栈中</li>
 <li>柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index所指向的高度<strong>保持依次增大</strong>的性质。</li>
