@@ -5,15 +5,20 @@
   
 
   
-  <title>Tag: CLI | a house in the woods</title>
+  <title>HTML parser和querySelector实现分析 | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/tags/CLI/index.html">
+  <meta name="description" content="前言 最近在学习React Native的开发，把web端的网站转成app，由于部分api的缺失，需要从web的HTML里提取信息，那么就需要一个解析HTML的工具。 cheerio就是其中一个有名的库，但遗憾的是cheerio本身不支持在React Native环境运行。 记得之前看过微信团队的一个开源项目kbone是通过在小程序中模拟浏览器环境让面向web端开发的应用也能运行在小程序中。里面就">
+<meta name="keywords" content="HTML,parser,querySelector">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTML parser和querySelector实现分析">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2019/11/13/HTML-parser-and-querySelector/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言 最近在学习React Native的开发，把web端的网站转成app，由于部分api的缺失，需要从web的HTML里提取信息，那么就需要一个解析HTML的工具。 cheerio就是其中一个有名的库，但遗憾的是cheerio本身不支持在React Native环境运行。 记得之前看过微信团队的一个开源项目kbone是通过在小程序中模拟浏览器环境让面向web端开发的应用也能运行在小程序中。里面就">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2019-11-13T10:38:17.639Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="HTML parser和querySelector实现分析">
+<meta name="twitter:description" content="前言 最近在学习React Native的开发，把web端的网站转成app，由于部分api的缺失，需要从web的HTML里提取信息，那么就需要一个解析HTML的工具。 cheerio就是其中一个有名的库，但遗憾的是cheerio本身不支持在React Native环境运行。 记得之前看过微信团队的一个开源项目kbone是通过在小程序中模拟浏览器环境让面向web端开发的应用也能运行在小程序中。里面就">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,40 +65,95 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2019/03/10/compile_cpp_from_command_line/" class="archive-article-date">
-  <time datetime="2019-03-10T11:43:30.615Z" itemprop="datePublished">Mar 10</time>
+        <section id="main"><article id="post-HTML-parser-and-querySelector" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2019/11/13/HTML-parser-and-querySelector/" class="article-date">
+  <time datetime="2019-11-13T08:49:36.794Z" itemprop="datePublished">2019-11-13</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2019/03/10/compile_cpp_from_command_line/">使用命令行编译C++</a>
+    <h1 class="article-title" itemprop="name">
+      HTML parser和querySelector实现分析
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
+<li>最近在学习React Native的开发，把web端的网站转成app，由于部分api的缺失，需要从web的HTML里提取信息，那么就需要一个解析HTML的工具。</li>
+<li>cheerio就是其中一个有名的库，但遗憾的是cheerio本身不支持在React Native环境运行。</li>
+<li>记得之前看过微信团队的一个开源项目<a href="https://github.com/wechat-miniprogram/kbone" target="_blank" rel="noopener">kbone</a>是通过在小程序中模拟浏览器环境让面向web端开发的应用也能运行在小程序中。里面就包含了<strong>HTML parser</strong>和<strong>querySelector</strong>的实现，这两个的实现主要是<br>参考了<a href="https://johnresig.com/files/htmlparser.js" target="_blank" rel="noopener">HTMLParser</a>和<a href="https://github.com/jquery/sizzle/tree/master" target="_blank" rel="noopener">Jquery的sizzle</a>。</li>
+<li>具体实现可以到上面的仓库查看相关代码，下面介绍实现的主要逻辑</li>
+</ul>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
+<li><strong>HTML parser</strong><ol>
+<li>建立一个栈stack </li>
+<li>抛开正则表达式不讲，最重要的逻辑是把遇到的<strong>开始标签(opening tag)</strong>时，会做如下操作：<ol>
+<li>如果栈不为空，就<strong>把新的标签加到栈顶的children数组</strong>中</li>
+<li>把它<strong>存到stack</strong></li>
+</ol>
+</li>
+<li>当遇到<strong>结束标签(closing tag)</strong>时，把stack中相同类型的标签压出</li>
+</ol>
+</li>
+<li><strong>querySelector</strong><ol>
+<li>初始的时候，遍历parser解析出的HTML tree，把node的id，class和tag分别加入到<strong>idMap</strong>, <strong>classMap</strong>，<strong>tagMap</strong>中</li>
+<li>selector的解析，<strong>一般我们读的时候是从左往右读的，但这个实现的解析的是从右往右的</strong>。<ol>
+<li>根据最右的规则，决定是从idMap, classMap还是tagMap从取出<strong>最初的候选列表</strong></li>
+<li>从右往左，根据一个个规则去过滤（收窄）候选列表</li>
+</ol>
+<ul>
+<li><em>这样做的好处，能想到的是，从右往左实际上是一种自下而上的方式，可以避免自上而下需要递归的问题。</em></li>
+</ul>
+<ol start="3">
+<li>去重和排序候选列表。去重不说，<strong>排序它使用的方法是</strong>，先找到两个node的最小的共同祖先A，设B为A下的子节点（B可能为node的祖先或者node本身），根据两个B的先后顺序，来决定node的先后顺序</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h2><ol>
+<li>JS现在可以做跨平台的开发，虽然有些方法在浏览器中是有的，但可能别的平台没有，这时候就需要开发者去了解DOM API的实现方式。</li>
+<li>假如浏览器的querySelector也是类似上述的实现方式，那么对于CSS selector的优化，可以做如下三点:<ol>
+<li>优先度应该是<strong>id，class再到tag</strong>，<strong>class方面尽量使用出现频率较少的那个</strong>，<strong>尽量不要用*</strong>，因为用*相当于选择了所有的tag类型</li>
+<li>关系选择器方面，<strong>尽量不要用跨层的空格selector</strong>，而要使用表示直接关系的</li>
+<li><strong>selector要尽量短</strong>，因为每多一层就多一次判断</li>
+</ol>
+</li>
+</ol>
 
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/13/HTML-parser-and-querySelector/" data-id="ck2x57l6200005su1oi54j1jj" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2019/11/10/Leetcode-84-Largest-Rectangle-in-Histogram/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Leetcode 84 Largest Rectangle in Histogram分析</div>
+    </a>
+  
+</nav>
+
+  
+</article>
 
 </section>
         
