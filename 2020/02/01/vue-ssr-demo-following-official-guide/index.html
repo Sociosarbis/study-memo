@@ -5,15 +5,20 @@
   
 
   
-  <title>Tag: bin-pack | a house in the woods</title>
+  <title>按照官方指南实践vue SSR | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/tags/bin-pack/index.html">
+  <meta name="description" content="前言年末跟新公司的同事聊过node中间件和服务端渲染的问题，大概的意思就是将原来nginx的特定路由的分发，交由我们前端组负责，使用node代替的想法，希望前端组能够不依赖后端的同学，独立完成一些服务端的工作，方便后面去做服务端渲染。于是，趁着春节假期，在家里花点时间，做一下vue的服务端渲染的实践。 实践笔记由于之前的项目一般都是通过vue-cli去生成的，所以初步的想法是思考将已有项目改为SS">
+<meta name="keywords" content="vue,SSR">
+<meta property="og:type" content="article">
+<meta property="og:title" content="按照官方指南实践vue SSR">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言年末跟新公司的同事聊过node中间件和服务端渲染的问题，大概的意思就是将原来nginx的特定路由的分发，交由我们前端组负责，使用node代替的想法，希望前端组能够不依赖后端的同学，独立完成一些服务端的工作，方便后面去做服务端渲染。于是，趁着春节假期，在家里花点时间，做一下vue的服务端渲染的实践。 实践笔记由于之前的项目一般都是通过vue-cli去生成的，所以初步的想法是思考将已有项目改为SS">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2020-02-02T11:27:00.358Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="按照官方指南实践vue SSR">
+<meta name="twitter:description" content="前言年末跟新公司的同事聊过node中间件和服务端渲染的问题，大概的意思就是将原来nginx的特定路由的分发，交由我们前端组负责，使用node代替的想法，希望前端组能够不依赖后端的同学，独立完成一些服务端的工作，方便后面去做服务端渲染。于是，趁着春节假期，在家里花点时间，做一下vue的服务端渲染的实践。 实践笔记由于之前的项目一般都是通过vue-cli去生成的，所以初步的想法是思考将已有项目改为SS">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,40 +65,89 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2020" class="archive-year">2020</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2020/01/01/2D-bin-packing-algorithm/" class="archive-article-date">
-  <time datetime="2020-01-01T14:19:37.109Z" itemprop="datePublished">Jan 1</time>
+        <section id="main"><article id="post-vue-ssr-demo-following-official-guide" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/" class="article-date">
+  <time datetime="2020-02-01T14:39:24.094Z" itemprop="datePublished">2020-02-01</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2020/01/01/2D-bin-packing-algorithm/">一种2D装箱算法</a>
+    <h1 class="article-title" itemprop="name">
+      按照官方指南实践vue SSR
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>年末跟新公司的同事聊过node中间件和服务端渲染的问题，大概的意思就是将原来nginx的特定路由的分发，交由我们前端组负责，使用node代替的想法，希望前端组能够不依赖后端的同学，独立完成一些服务端的工作，方便后面去做服务端渲染。<br>于是，趁着春节假期，在家里花点时间，做一下vue的服务端渲染的实践。</p>
+<h2 id="实践笔记"><a href="#实践笔记" class="headerlink" title="实践笔记"></a>实践笔记</h2><p>由于之前的项目一般都是通过vue-cli去生成的，所以初步的想法是思考将已有项目改为SSR的方法。<br>于是实践便由<code>vue create ssr-demo</code>命令生成的项目开始了。<br>第一步，一般是去查看<a href="https://ssr.vuejs.org/guide/" target="_blank" rel="noopener">官方指南</a>。可喜的是，在某一页中看到了一个官方demo的<a href="https://github.com/vuejs/vue-hackernews-2.0" target="_blank" rel="noopener">github链接</a>，有示例项目作为参照，认识会更具体一些。</p>
+<p><strong>SSR大体来说是用同一份代码，分别以server环境和client环境为目标做两次打包（具体来说可以是使用两份配置，运行两次webpack），server端收到请求运行对应环境的bundle，render出html，发回client端；而html里包含了client环境bundle的script，css资源的链接。加载完script以后会hydrate（激活）服务器渲染出来的app的html（如给DOM添加listener）。</strong></p>
+<p>所以在改造项目时，<strong>需要意识到server环境和client环境的API的不同</strong>。<br><strong>改造过程中已知的两个环境的不同点有：</strong></p>
+<ol>
+<li>server端在渲染component时，生命周期只会进行到<code>created</code>，所以最好是做到<strong>全局</strong>和周期<code>created</code>之前的代码是环境通用的代码。</li>
+<li>需要预获取的数据的component，可以在构造options提供<code>serverPrefetch</code>的option，这是一个this指向vue instance的function，如果返回一个promise，会等这个promise resolved后再去做component的render。</li>
+<li>client端的bundle的webpack config一般可能会加splitChunks来做代码分割，可是server端的bundle则需要将所有代码打包成一块，所以不做代码分割。</li>
+<li>server端的入口文件需要export一个接收ssr context对象，返回可resolve出app实例的promise。</li>
+<li>server端需要添加<code>VueSSRServerPlugin</code>，webpack打包最终生成一个json；client端则添加<code>VueSSRClientPlugin</code>，除了生成的js，css等文件以外，还会生成一个<code>client-manifest</code>的json文件（用于提供生成的文件的信息，让服务端渲染的html能够正确插入client端生成文件资源的标签）。</li>
+<li>server端的配置还需要在<code>DefinePlugin</code>中加上<code>Process.env.VUE_ENV=&#39;server&#39;</code>的配置。</li>
+</ol>
+<p><strong>共同点</strong></p>
+<ol>
+<li>由于生成的html由服务端渲染而成（或者说由服务端渲染负责），所以原有的htmlWebpackPlugin也去掉。而prefetch，preload和pwa的插件依赖于htmlWebpackPlugin，所以在配置中都要去掉。</li>
+</ol>
+<p><strong>遇到的问题和解决方法</strong></p>
+<ol>
+<li>vue-cli生成的项目，除非释出webpack的配置，否则都是通过创建的vue.config.js对webpack进行调整。而当在开发的时候，因为不去用默认的webpack的devServer，所以需要获取根据vue.config.js生成的webpack配置。而<code>@vue/cli-service/lib/Service</code>的Service实例提供了一个<br><code>resolveWebpackConfig</code>的方法，去得到相应的wepack配置。</li>
+<li>第二个问题时<code>1</code>中的Service实例怎么找到对应的vue.config.js文件呢？现在有client和server两个config，需要动态替换vue config来生成webpack配置。通过阅读网上方案和<code>@vue/cli-service/lib/Service</code>的源代码，得知可在创建Service实例前，通过改变<code>process.env.VUE_CLI_SERVICE_CONFIG_PATH</code>为对应<code>vue.config.js</code>的<strong>绝对路径</strong>，便可实现动态切换需求。</li>
+<li><code>1</code>中提到需要自己去写一个devServer，主要就是要实现打包资源请求的响应和模块热更替。修改的关键是添加<code>webpack-dev-middleware</code>,<code>webpack-hot-middleware</code>和<code>HotModuleReplacementPlugin</code>。<ol>
+<li><code>webpack-dev-middleware</code>的功能是处理打包资源请求的响应，同时也把compiler的fileSystem改为<code>memory-fs</code>（将打包的文件缓存在内存里），如果有与请求匹配的打包后的asset，则将之返回。</li>
+<li><code>webpack-hot-middleware</code>的是做监听webpack的recompile事件，然后通知客户端的工作。</li>
+<li><code>HotModuleReplacementPlugin</code>则是给文件的<code>module</code>添加<code>hot</code>的属性，提供一些关于请求更新后的模块资源等API，<code>webpack-hot-middleware</code>包含了这些API的使用，所以一般不需要自行配置。</li>
+</ol>
+</li>
+<li>虽然<code>3</code>中的<code>webpack-hot-middleware</code>帮忙处理了webpack的recompile的模块更新问题，不过还有一个<code>index.template.html</code>文件需要做热更新，在这里是使用<code>chokidar</code>做文件更新监听，再利用<code>webpack-hot-middleware</code>的<code>publish</code>方法通知客户端。</li>
+<li>到了生成<code>production</code>环境文件的时候，依然还是使用vue-cli进行生成，所以像<code>2</code>中所述，需要在<code>package.json</code>的script中填写<code>vue.config.js</code>的<strong>绝对路径</strong>。跨平台的环境变量设置可以使用<code>cross-env</code>，但是要得到这个<strong>绝对路径</strong>，需要知道<strong>工作目录</strong>。但是在不同平台的<strong>工作目录变量</strong>的名字可能不一样，所以这里使用了<code>$INIT_CWD</code>这个变量。<code>$INIT_CWD</code>指的是<strong>npm指令运行时的工作目录</strong>。</li>
+<li>当我尝试做组件的<strong>Data Prefetch</strong>时，使用了<code>&#39;/topNews&#39;</code>这个相对的url，在client端是没问题的，会带上host和port，但是在server端，他没有这个context，如果是用相对的url，host会是localhost（这个没有问题），但是<strong>port会是默认的80</strong>，所以需要在axios那里根据是否是server环境，去加上如<code>http://localhost:8080</code>的前缀。</li>
+</ol>
+<h3 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h3><p>项目放在<a href="https://github.com/Sociosarbis/vue-ssr-demo" target="_blank" rel="noopener">github</a>，大部分参考自官方的demo，已完成项目框架的搭建。后面假如说真的有需要的话，再进一步完善本项目。<br>后面可做的有:</p>
+<ol>
+<li>做成vue-cli的preset，一件生成目录结构。</li>
+<li>添加server的proxy和cache功能。</li>
+<li>配置作为业务模块分发的路由。</li>
+</ol>
 
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/" data-id="ck64y70vs000fjgu1ohoowycr" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/">vue</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2020/01/01/2D-bin-packing-algorithm/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">一种2D装箱算法</div>
+    </a>
+  
+</nav>
+
+  
+</article>
 
 </section>
         
