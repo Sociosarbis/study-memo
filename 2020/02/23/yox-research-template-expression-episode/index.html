@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Yox框架研究（1）—模板表达式编译篇 | a house in the woods</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="缘起在google上搜索 “vue不能兼容IE8”，在知乎上看到Yox的作者在推他写的这个框架。这个框架的特点是属性方法设计基本与vue一致，模板语法参照handlebar，能兼容IE6以上的浏览器。值得一提的是，Yox的作者对自己的作品很有自信，且声称该框架一直用在自己的工作中。 阅读框架源码，发觉他的自信是有道理的，理由有:  代码使用typescript编写 代码组织清晰，变量命名简单易懂，">
+<meta name="keywords" content="vue,template,Yox,mvvm,framework,expression,compile">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Yox框架研究（1）—模板表达式编译篇">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2020/02/23/yox-research-template-expression-episode/index.html">
+<meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="缘起在google上搜索 “vue不能兼容IE8”，在知乎上看到Yox的作者在推他写的这个框架。这个框架的特点是属性方法设计基本与vue一致，模板语法参照handlebar，能兼容IE6以上的浏览器。值得一提的是，Yox的作者对自己的作品很有自信，且声称该框架一直用在自己的工作中。 阅读框架源码，发觉他的自信是有道理的，理由有:  代码使用typescript编写 代码组织清晰，变量命名简单易懂，">
+<meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2020-02-23T14:42:55.838Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Yox框架研究（1）—模板表达式编译篇">
+<meta name="twitter:description" content="缘起在google上搜索 “vue不能兼容IE8”，在知乎上看到Yox的作者在推他写的这个框架。这个框架的特点是属性方法设计基本与vue一致，模板语法参照handlebar，能兼容IE6以上的浏览器。值得一提的是，Yox的作者对自己的作品很有自信，且声称该框架一直用在自己的工作中。 阅读框架源码，发觉他的自信是有道理的，理由有:  代码使用typescript编写 代码组织清晰，变量命名简单易懂，">
+  
+    <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/study-memo/css/style.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/study-memo/" id="logo">a house in the woods</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/study-memo/">Home</a>
+        
+          <a class="main-nav-link" href="/study-memo/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/study-memo/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://sociosarbis.github.io/study-memo"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-yox-research-template-expression-episode" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/" class="article-date">
+  <time datetime="2020-02-23T14:42:49.525Z" itemprop="datePublished">2020-02-23</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Yox框架研究（1）—模板表达式编译篇
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h3><p>在google上搜索 <strong>“vue不能兼容IE8”</strong>，在知乎上看到Yox的作者在推他写的这个框架。这个框架的特点是属性方法设计基本与<code>vue</code>一致，模板语法参照<code>handlebar</code>，能兼容IE6以上的浏览器。<br>值得一提的是，Yox的作者对自己的作品很有自信，且声称该框架一直用在自己的工作中。</p>
+<p>阅读框架源码，发觉他的自信是有道理的，理由有:</p>
+<ol>
+<li>代码使用typescript编写</li>
+<li>代码组织清晰，变量命名简单易懂，少新造概念，并且有足够的注释</li>
+<li>有独特的设计，如使用<code>handlebar</code>的模板语法，在列表渲染中有类似变量作用域的语法设计（<code>&quot;../name&quot;</code>表示使用上一层的name属性）</li>
+<li>整个框架基本由他一人开发</li>
+</ol>
+<p>因为有这些特点，让我觉得这是一个值得深入学习的项目。</p>
+<h3 id="正题"><a href="#正题" class="headerlink" title="正题"></a>正题</h3><p><strong>模板编译</strong>的工作是把模板字符串转成函数代码，我看过的一些模板引擎<code>ejs</code>，<code>pug</code>，<code>vue</code>，<code>yox</code>都是同样的做法。<br><code>yox</code>把模板表达式的编译部分拆分成独立的模块(<code>yox-expression-compiler</code>)，整个模板的编译为<code>yox-template-compiler</code>模块。</p>
+<p><code>yox-expression-compiler</code>模块包含了三个感觉比较重要的概念：</p>
+<ol>
+<li>compiler：解析表达式</li>
+<li>creator：创建组成表达式的各类节点，如字面量、标识符、函数调用节点</li>
+</ol>
+<p>节点，其实就是结构对象：<br><figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">createLiteral</span>(<span class="params">value: <span class="built_in">any</span>, raw: <span class="built_in">string</span></span>): <span class="title">Literal</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    <span class="keyword">type</span>: nodeType.LITERAL,</span><br><span class="line">    raw,</span><br><span class="line">    value,</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<ol start="3">
+<li>generator: 将节点转换成代码字符</li>
+</ol>
+<p>creator和generator相对来说没那么复杂，而compiler则负责代码扫描解析逻辑的任务。</p>
+<h4 id="compiler的设计"><a href="#compiler的设计" class="headerlink" title="compiler的设计"></a>compiler的设计</h4><ol>
+<li>游标移动<ol>
+<li><code>go</code>：前进后退</li>
+<li><code>skip</code>: 跳过空白字符</li>
+</ol>
+</li>
+<li>token类型判断——<code>scanToken</code>，有下列情况：<ol>
+<li>identifier（标识符，如<code>a</code>, <code>name</code>）</li>
+<li>literal（字面量）<ol>
+<li>number</li>
+<li>字符串</li>
+<li>数组</li>
+<li>对象</li>
+</ol>
+</li>
+<li>一元运算符（二元运算符的提取会在<code>scanBinary</code>）</li>
+<li>特殊字符  <ol>
+<li><code>(xx)</code>，括号</li>
+<li><code>.</code>,<code>../</code>，表示上面提到的作用域切换或者<code>&#39;.&#39;</code>开头的数字</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>运算式的解析——<code>scanTernary</code>、<code>scanBinary</code></li>
+</ol>
+<h5 id="其他规则："><a href="#其他规则：" class="headerlink" title="其他规则："></a>其他规则：</h5><ol>
+<li><strong>当遇到idenfier或者字面量</strong>（除<strong>number</strong>和<strong>对象</strong>外），还会进行<code>scanTail</code>逻辑（意思式检测后面是否接着<code>.</code>，<code>[]</code>这样的取成员的表达式以及<code>(a,b,c)</code>这样可能的函数调用表示，如果有则会组成一个新的节点）</li>
+<li><strong>当下一个接的值是可能的任意值时（如对象的属性值，数组的成员，函数参数）</strong>，都会调用<code>scanTernary</code>,所以在启动编译时，第一步就是执行这个方法。可能的解释是<strong>三元表达式</strong>是包含内联代码所有可能的<strong>表达式</strong>，所以先假定是<strong>三元表达式</strong>，如果不符合条件再fallback到其余情况。</li>
+</ol>
+<h5 id="比较有启发性的解析方法："><a href="#比较有启发性的解析方法：" class="headerlink" title="比较有启发性的解析方法："></a>比较有启发性的解析方法：</h5><ol>
+<li>对象解析:<br>对象分为key和value，所以在解析时会在<code>key</code>和<code>value</code>两个模式中进行切换，初始时<code>key</code>，遇到<code>:</code>转<code>value</code>，遇到<code>,</code>转<code>key</code>。解析到<code>key</code>和<code>value</code>时，会分别添加到<code>keys</code>和<code>values</code>数组。当遇到<code>}</code>闭合字符时，根据两个数组中成员的个数，判断对象是否合法。</li>
+<li><p>二元运算式解析：<br>运算式由<strong>运算数（operand）</strong>和<strong>运算符（operator）</strong>组成，先解析运算数后解析运算符，而二元运算符有优先级的问题（<code>a + b * c + d</code>，应该先运算<code>b * c</code>）。</p>
+<p>解决的方法为源码中提到的<a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm" target="_blank" rel="noopener">Shunting-yard algorithm</a></p>
+<p>中心思想是，<strong>运算数</strong>和<strong>运算符</strong>会按顺序<code>push</code>到数组中，确保扫描到的当前运算符的优先级小于前一个运算符，否则则将前一个二元运算提出来作为一个新的<code>Node</code>（如上面<code>+ d</code>的<code>+</code>）</p>
+<p>（中文译作调度场算法，一种将中缀表达式<code>a + b</code>转成后缀表达<code>a b +</code>的算法，之前好像有在线上课程中提到过，应该是计算机系的课程内容。</p>
+<p>wiki上说中缀表达式不易被电脑识别，但感觉这不构成在这里使用这个算法的理由，毕竟似乎 <strong>“假如当前运算符的优先级高于前一个，则将后面的二元运算式提出”</strong>也行得通。不过可能这样的话，由于还不知道下一个操作数，不好做处理，所以选用了这个算法）。</p>
+<p>当后面不再有二元运算式时，再从<strong>数组</strong>后面取出组成一个个的二元运算式节点。</p>
+</li>
+</ol>
+<h3 id="compiler的阅读体会"><a href="#compiler的阅读体会" class="headerlink" title="compiler的阅读体会"></a>compiler的阅读体会</h3><ol>
+<li>对于代码表达式来说，通常都会有开始标志和结束标志的这样成对的设计，如html标签<code>&lt;div&gt;&lt;/div&gt;</code>，字符串<code>&#39;a&#39;</code>,<code>&quot;abc&quot;</code>，对象<code>{ a: 1 }</code>，数组<code>[ 1, 2, 3 ]</code>,函数参数<code>(1, 2, 3)</code>。</li>
+<li>之前觉得像对象那样的嵌套结构挺难处理的，但事实上这种情况完全符合递归的场景，只需要再调用根函数即可，像上面说的<code>scanTernary</code></li>
+</ol>
+<h3 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h3><p>下一篇应该是关于整个<code>template</code>编译的学习。现在开始需要多学习框架或者大项目的设计模式，这样才能学会独立从零到一开发项目。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/02/23/yox-research-template-expression-episode/" data-id="ck6z56kmn00000su174pvrzdp" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/">vue</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">按照官方指南实践vue SSR</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 10px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/">Yox框架研究（1）—模板表达式编译篇</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/">按照官方指南实践vue SSR</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/01/01/2D-bin-packing-algorithm/">一种2D装箱算法</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2019/12/27/from-whistle-hot-reload-plugin-develoment-to-websocket-mechanism/">从whistle热重载插件到websocket工作原理</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2019/11/13/HTML-parser-and-querySelector/">HTML parser和querySelector实现分析</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 Sociosarbis<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/study-memo/" class="mobile-nav-link">Home</a>
+  
+    <a href="/study-memo/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/study-memo/fancybox/jquery.fancybox.css">
+  <script src="/study-memo/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/study-memo/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
