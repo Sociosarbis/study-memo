@@ -73,7 +73,8 @@ Vue.component("select-group", {
 ```
 3. 对tab使用v-if和keep-alive
 * v-if控制不生成无需显示的虚拟DOM，这样在点击全局全选/取消全选（会影响所有tab的数据）的时候，不用去做其他tab的diff。
-* 使用keep-alive的原因是使用v-if以后，切换tab会有较大的延迟（原因是有大量的DOM的创建），所以使用keep-alive缓存DOM，除了第一次由于无缓存而比较迟缓外，后续的切换速度还是可以的。
+* 使用keep-alive的原因是使用v-if以后，切换tab会有较大的延迟（原因是有大量的DOM的创建），所以使用keep-alive缓存组件，除了第一次由于无缓存而比较迟缓外，后续的切换速度还是可以的。
+* **在keep-alive上最开始我犯了个错误，在keep-alive下面放div，发现并没有任何提升效果，看了文档发现keep-alive下面需要放自定义组件**
 * 这个方案不太具通用性，但Vue没有`shouldComponentUpdate`的更新控制，不过也算是个可考虑的技巧。
 
 ## 写在最后
