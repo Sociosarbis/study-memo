@@ -5,15 +5,20 @@
   
 
   
-  <title>Tag: temporary variable | a house in the woods</title>
+  <title>提高Vue应用性能的技巧 | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/tags/temporary-variable/index.html">
+  <meta name="description" content="前言这星期发现开发的某个页面的复选框的点击反馈比较的慢，为了给用户提供更好交互体验的信念，同时也为了验证积累的Vue框架的知识，决定改善这个部分的代码写法。而这个页面最开始是其他同事开发的，可能团队中一直都没有意识到这个问题，所以趁此机会分享这次调优的过程。 案例分析原案例我把它稍简化以后放到codepen进行展示。   See the Pen   speed up the interaction">
+<meta name="keywords" content="performance,Vue">
+<meta property="og:type" content="article">
+<meta property="og:title" content="提高Vue应用性能的技巧">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言这星期发现开发的某个页面的复选框的点击反馈比较的慢，为了给用户提供更好交互体验的信念，同时也为了验证积累的Vue框架的知识，决定改善这个部分的代码写法。而这个页面最开始是其他同事开发的，可能团队中一直都没有意识到这个问题，所以趁此机会分享这次调优的过程。 案例分析原案例我把它稍简化以后放到codepen进行展示。   See the Pen   speed up the interaction">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2020-04-19T15:29:59.966Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="提高Vue应用性能的技巧">
+<meta name="twitter:description" content="前言这星期发现开发的某个页面的复选框的点击反馈比较的慢，为了给用户提供更好交互体验的信念，同时也为了验证积累的Vue框架的知识，决定改善这个部分的代码写法。而这个页面最开始是其他同事开发的，可能团队中一直都没有意识到这个问题，所以趁此机会分享这次调优的过程。 案例分析原案例我把它稍简化以后放到codepen进行展示。   See the Pen   speed up the interaction">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,40 +65,96 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/" class="archive-article-date">
-  <time datetime="2019-01-12T13:32:53.990Z" itemprop="datePublished">Jan 12</time>
+        <section id="main"><article id="post-optimization-techniques-for-better-performance-of-vue-app" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" class="article-date">
+  <time datetime="2020-04-19T13:38:12.620Z" itemprop="datePublished">2020-04-19</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2019/01/12/use-temporary-variables-in-Vue-template/">在Vue的template里面使用临时变量</a>
+    <h1 class="article-title" itemprop="name">
+      提高Vue应用性能的技巧
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这星期发现开发的某个页面的复选框的点击反馈比较的慢，为了给用户提供更好交互体验的信念，同时也为了验证积累的Vue框架的知识，决定改善这个部分的代码写法。而这个页面最开始是其他同事开发的，可能团队中一直都没有意识到这个问题，所以趁此机会分享这次调优的过程。</p>
+<h2 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h2><p>原案例我把它稍简化以后放到codepen进行展示。</p>
+<p></p><p class="codepen" data-height="265" data-theme-id="light" data-default-tab="js,result" data-user="sociosarbis" data-slug-hash="ExVyppE" style="height: 265px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid; margin: 1em 0; padding: 1em;" data-pen-title="speed up the interaction of a view with many checkboxes"><br>  <span>See the Pen <a href="https://codepen.io/sociosarbis/pen/ExVyppE" target="_blank" rel="noopener"><br>  speed up the interaction of a view with many checkboxes</a> by Sociosarbis (<a href="https://codepen.io/sociosarbis" target="_blank" rel="noopener">@sociosarbis</a>)<br>  on <a href="https://codepen.io" target="_blank" rel="noopener">CodePen</a>.</span><br></p><p></p>
+<script async src="https://static.codepen.io/assets/embed/ei.js"></script>
 
+<p><strong>经过一些实验以后，有以下的发现</strong></p>
+<ul>
+<li>性能的瓶颈其实大部分都来自于DOM操作和渲染</li>
+<li>依据视图依赖的数据，拆分独立组件，可以减少diff次数（这点其实之前已经有了解）</li>
+</ul>
+<p><strong>这次调优技巧涉及到3点</strong></p>
+<ol>
+<li>把复选框的每个组做成一个独立的组件。</li>
+</ol>
+<p>vue更新的大致机制是：</p>
+<ol>
+<li>在运行时或者编译时最终都会把template，转换成组件的render函数</li>
+<li>执行render函数时返回虚拟DOM，在这过程中会收集render函数中的数据依赖（收集原理可参考<a href="https://sociosarbis.github.io/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/">通过简化版的Observer的实现来说明vue的watch的工作原理</a>), 当依赖数据改变时，再次执行render函数得到新的虚拟DOM，与旧虚拟DOM进行diff更新。</li>
+<li>假如render函数中出现的自定义组件的props不发生改变，是不会去执行自定义组件的render函数，意思是不会diff更深一层，这样就能减少diff的次数。</li>
+</ol>
+<p>示例：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Vue.extend(&#123;</span><br><span class="line">  template: <span class="string">`&lt;el-tabs v-model="activeTab"&gt;</span></span><br><span class="line"><span class="string">  &lt;el-tab-pane class="tab__pane" v-for="tab in tabs" :key="tab.name" :name="tab.name" :label="tab.name + '(' + tabCount(tab) +')'"&gt;</span></span><br><span class="line"><span class="string">    `</span> + <span class="comment">/*&lt;div v-for="group in tab.groups" :key="group.name"&gt;</span></span><br><span class="line"><span class="comment">    &lt;div&gt;&lt;el-checkbox :value="group.selectedMembers.length === group.members.length" @input="group.selectedMembers = $event ? group.members : []" @click.native="startInteraction"/&gt;&#123;&#123;group.name + '(' + group.selectedMembers.length + ')'&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="comment">      &lt;el-checkbox-group v-model="group.selectedMembers" @click.native="startInteraction"&gt;</span></span><br><span class="line"><span class="comment">        &lt;el-checkbox v-for="(member, index) in group.members" :label="member" :key="index" /&gt;</span></span><br><span class="line"><span class="comment">      &lt;/el-checkbox-group&gt;</span></span><br><span class="line"><span class="comment">    &lt;/div&gt; */</span> + <span class="string">`</span></span><br><span class="line"><span class="string">  &lt;/el-tab-pane&gt;</span></span><br><span class="line"><span class="string">&lt;/el-tabs&gt;`</span>,</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>把注释掉的部分抽出改成<code>select-group</code>组件<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Vue.component(<span class="string">"select-group"</span>, &#123;</span><br><span class="line">  template: <span class="string">`&lt;div&gt;&lt;div&gt;&lt;el-checkbox :value="group.selectedMembers.length === group.members.length" @input="group.selectedMembers = $event ? group.members : []" @click.native="$emit('click')"/&gt;&#123;&#123;group.name + '(' + group.selectedMembers.length + ')'&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="string">      &lt;el-checkbox-group v-model="group.selectedMembers" @click.native="$emit('click')"&gt;</span></span><br><span class="line"><span class="string">        &lt;el-checkbox v-for="(member, index) in group.members" :label="member" :key="index" /&gt;</span></span><br><span class="line"><span class="string">      &lt;/el-checkbox-group&gt;&lt;/div&gt;`</span>,</span><br><span class="line">  props: &#123;</span><br><span class="line">    group: <span class="built_in">Object</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<ol start="2">
+<li>取消复选框的过渡动画</li>
+</ol>
+<ul>
+<li>取消动画的原因是在全选/取消全选的时候，大量的复选框（大量的DOM对象）会影响渲染速度，过渡动画会变慢，取消以后，视觉上的反馈速度会快许多。<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-checked</span> <span class="selector-class">.el-checkbox__inner</span>, <span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-indeterminate</span> <span class="selector-class">.el-checkbox__inner</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-class">.el-checkbox__inner</span><span class="selector-pseudo">::after</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol start="3">
+<li>对tab使用v-if和keep-alive</li>
+</ol>
+<ul>
+<li>v-if控制不生成无需显示的虚拟DOM，这样在点击全局全选/取消全选（会影响所有tab的数据）的时候，不用去做其他tab的diff。</li>
+<li>使用keep-alive的原因是使用v-if以后，切换tab会有较大的延迟（原因是有大量的DOM的创建），所以使用keep-alive缓存DOM，除了第一次由于无缓存而比较迟缓外，后续的切换速度还是可以的。</li>
+<li>这个方案不太具通用性，但Vue没有<code>shouldComponentUpdate</code>的更新控制，不过也算是个可考虑的技巧。</li>
+</ul>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>前端框架虽然减少了开发者的工作量，但也有执行效率不那么高效的一面（需要遍历diff而不是直接命令式的指定某个DOM更新），为了给用户更好的用户体验，成为更好的开发者，需要在调优上多花点心思。</p>
+<p>附：</p>
+<ul>
+<li>其实DOM的渲染也是影响性能的一个重要因素。这个论点的根据时，当我把所有tab的<code>display</code>设为<code>none</code>后，发现切换的速度会有很大的提升。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" data-id="ck977iv810000d8u1e49j8835" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/performance/">performance</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Yox框架研究（1）—模板表达式编译篇</div>
+    </a>
+  
+</nav>
+
+  
+</article>
 
 </section>
         

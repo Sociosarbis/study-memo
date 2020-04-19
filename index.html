@@ -62,6 +62,87 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-optimization-techniques-for-better-performance-of-vue-app" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" class="article-date">
+  <time datetime="2020-04-19T13:38:12.620Z" itemprop="datePublished">2020-04-19</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/">提高Vue应用性能的技巧</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这星期发现开发的某个页面的复选框的点击反馈比较的慢，为了给用户提供更好交互体验的信念，同时也为了验证积累的Vue框架的知识，决定改善这个部分的代码写法。而这个页面最开始是其他同事开发的，可能团队中一直都没有意识到这个问题，所以趁此机会分享这次调优的过程。</p>
+<h2 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h2><p>原案例我把它稍简化以后放到codepen进行展示。</p>
+<p></p><p class="codepen" data-height="265" data-theme-id="light" data-default-tab="js,result" data-user="sociosarbis" data-slug-hash="ExVyppE" style="height: 265px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid; margin: 1em 0; padding: 1em;" data-pen-title="speed up the interaction of a view with many checkboxes"><br>  <span>See the Pen <a href="https://codepen.io/sociosarbis/pen/ExVyppE" target="_blank" rel="noopener"><br>  speed up the interaction of a view with many checkboxes</a> by Sociosarbis (<a href="https://codepen.io/sociosarbis" target="_blank" rel="noopener">@sociosarbis</a>)<br>  on <a href="https://codepen.io" target="_blank" rel="noopener">CodePen</a>.</span><br></p><p></p>
+<script async src="https://static.codepen.io/assets/embed/ei.js"></script>
+
+<p><strong>经过一些实验以后，有以下的发现</strong></p>
+<ul>
+<li>性能的瓶颈其实大部分都来自于DOM操作和渲染</li>
+<li>依据视图依赖的数据，拆分独立组件，可以减少diff次数（这点其实之前已经有了解）</li>
+</ul>
+<p><strong>这次调优技巧涉及到3点</strong></p>
+<ol>
+<li>把复选框的每个组做成一个独立的组件。</li>
+</ol>
+<p>vue更新的大致机制是：</p>
+<ol>
+<li>在运行时或者编译时最终都会把template，转换成组件的render函数</li>
+<li>执行render函数时返回虚拟DOM，在这过程中会收集render函数中的数据依赖（收集原理可参考<a href="https://sociosarbis.github.io/study-memo/2018/11/11/simple-implementation-of-observer-to-illustrate-how-vue-watcher-works/">通过简化版的Observer的实现来说明vue的watch的工作原理</a>), 当依赖数据改变时，再次执行render函数得到新的虚拟DOM，与旧虚拟DOM进行diff更新。</li>
+<li>假如render函数中出现的自定义组件的props不发生改变，是不会去执行自定义组件的render函数，意思是不会diff更深一层，这样就能减少diff的次数。</li>
+</ol>
+<p>示例：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Vue.extend(&#123;</span><br><span class="line">  template: <span class="string">`&lt;el-tabs v-model="activeTab"&gt;</span></span><br><span class="line"><span class="string">  &lt;el-tab-pane class="tab__pane" v-for="tab in tabs" :key="tab.name" :name="tab.name" :label="tab.name + '(' + tabCount(tab) +')'"&gt;</span></span><br><span class="line"><span class="string">    `</span> + <span class="comment">/*&lt;div v-for="group in tab.groups" :key="group.name"&gt;</span></span><br><span class="line"><span class="comment">    &lt;div&gt;&lt;el-checkbox :value="group.selectedMembers.length === group.members.length" @input="group.selectedMembers = $event ? group.members : []" @click.native="startInteraction"/&gt;&#123;&#123;group.name + '(' + group.selectedMembers.length + ')'&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="comment">      &lt;el-checkbox-group v-model="group.selectedMembers" @click.native="startInteraction"&gt;</span></span><br><span class="line"><span class="comment">        &lt;el-checkbox v-for="(member, index) in group.members" :label="member" :key="index" /&gt;</span></span><br><span class="line"><span class="comment">      &lt;/el-checkbox-group&gt;</span></span><br><span class="line"><span class="comment">    &lt;/div&gt; */</span> + <span class="string">`</span></span><br><span class="line"><span class="string">  &lt;/el-tab-pane&gt;</span></span><br><span class="line"><span class="string">&lt;/el-tabs&gt;`</span>,</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>把注释掉的部分抽出改成<code>select-group</code>组件<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Vue.component(<span class="string">"select-group"</span>, &#123;</span><br><span class="line">  template: <span class="string">`&lt;div&gt;&lt;div&gt;&lt;el-checkbox :value="group.selectedMembers.length === group.members.length" @input="group.selectedMembers = $event ? group.members : []" @click.native="$emit('click')"/&gt;&#123;&#123;group.name + '(' + group.selectedMembers.length + ')'&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="string">      &lt;el-checkbox-group v-model="group.selectedMembers" @click.native="$emit('click')"&gt;</span></span><br><span class="line"><span class="string">        &lt;el-checkbox v-for="(member, index) in group.members" :label="member" :key="index" /&gt;</span></span><br><span class="line"><span class="string">      &lt;/el-checkbox-group&gt;&lt;/div&gt;`</span>,</span><br><span class="line">  props: &#123;</span><br><span class="line">    group: <span class="built_in">Object</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<ol start="2">
+<li>取消复选框的过渡动画</li>
+</ol>
+<ul>
+<li>取消动画的原因是在全选/取消全选的时候，大量的复选框（大量的DOM对象）会影响渲染速度，过渡动画会变慢，取消以后，视觉上的反馈速度会快许多。<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-checked</span> <span class="selector-class">.el-checkbox__inner</span>, <span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-indeterminate</span> <span class="selector-class">.el-checkbox__inner</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-class">.el-checkbox__inner</span><span class="selector-pseudo">::after</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol start="3">
+<li>对tab使用v-if和keep-alive</li>
+</ol>
+<ul>
+<li>v-if控制不生成无需显示的虚拟DOM，这样在点击全局全选/取消全选（会影响所有tab的数据）的时候，不用去做其他tab的diff。</li>
+<li>使用keep-alive的原因是使用v-if以后，切换tab会有较大的延迟（原因是有大量的DOM的创建），所以使用keep-alive缓存DOM，除了第一次由于无缓存而比较迟缓外，后续的切换速度还是可以的。</li>
+<li>这个方案不太具通用性，但Vue没有<code>shouldComponentUpdate</code>的更新控制，不过也算是个可考虑的技巧。</li>
+</ul>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>前端框架虽然减少了开发者的工作量，但也有执行效率不那么高效的一面（需要遍历diff而不是直接命令式的指定某个DOM更新），为了给用户更好的用户体验，成为更好的开发者，需要在调优上多花点心思。</p>
+<p>附：</p>
+<ul>
+<li>其实DOM的渲染也是影响性能的一个重要因素。这个论点的根据时，当我把所有tab的<code>display</code>设为<code>none</code>后，发现切换的速度会有很大的提升。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" data-id="ck977iv810000d8u1e49j8835" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/performance/">performance</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-yox-research-template-expression-episode" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/" class="article-date">
@@ -723,54 +804,6 @@
 
 
   
-    <article id="post-web-front-end-knowledge-memo(JS)-ep2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep2/" class="article-date">
-  <time datetime="2019-11-02T13:30:29.482Z" itemprop="datePublished">2019-11-02</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep2/">web前端知识学习笔记-JS篇(2)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="立即执行函数（immediatly-invoked-function-expression）"><a href="#立即执行函数（immediatly-invoked-function-expression）" class="headerlink" title="立即执行函数（immediatly invoked function expression）"></a>立即执行函数（immediatly invoked function expression）</h2><p>从题目总结其性质</p>
-<ol>
-<li><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> a = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">const</span> b = <span class="number">30</span>;</span><br><span class="line">(<span class="function"><span class="keyword">function</span> <span class="title">a</span>(<span class="params">b</span>) </span>&#123;</span><br><span class="line">     a = <span class="number">10</span>;</span><br><span class="line">     b = <span class="number">20</span>;</span><br><span class="line">     <span class="built_in">console</span>.log(a)</span><br><span class="line">     <span class="built_in">console</span>.log(b);</span><br><span class="line">&#125;(<span class="number">10</span>))</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<p>总结：这里会输出a函数定义和20。</p>
-<ol>
-<li>性质一，IIFE的函数名，不会在括号外出现声明，所以不会与<code>const a</code>产生冲突错误。</li>
-<li>IIFE的函数名可看作是<code>const</code>，对其再赋值会无效，在严格模式下会报错。</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep2/" data-id="ck64y70w6000pjgu19mxpaklg" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -789,7 +822,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
     </div>
   </div>
 
@@ -799,7 +832,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 10px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12.5px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
     </div>
   </div>
 
@@ -808,7 +841,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
     </div>
   </div>
 
@@ -819,6 +852,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/">提高Vue应用性能的技巧</a>
+          </li>
         
           <li>
             <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/">Yox框架研究（1）—模板表达式编译篇</a>
@@ -834,10 +871,6 @@
         
           <li>
             <a href="/study-memo/2019/12/27/from-whistle-hot-reload-plugin-develoment-to-websocket-mechanism/">从whistle热重载插件到websocket工作原理</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2019/11/13/HTML-parser-and-querySelector/">HTML parser和querySelector实现分析</a>
           </li>
         
       </ul>
