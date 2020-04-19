@@ -1,5 +1,5 @@
 ---
-title: 提高Vue应用性能的技巧
+title: Vue应用性能调优技巧
 tags:
   - Vue
   - performance
