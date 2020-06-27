@@ -144,6 +144,83 @@
 
 
   
+    <article id="post-experience-of-using-git-submodule" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/03/18/experience-of-using-git-submodule/" class="article-date">
+  <time datetime="2020-03-18T01:18:32.233Z" itemprop="datePublished">2020-03-18</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2020/03/18/experience-of-using-git-submodule/">git submodule的使用经验</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>上两周开始，我开始在实际项目中使用之前同事提到过的<code>git submodule</code>的代码管理方式。</p>
+<p>最开始我引入这个命令的原因是前端的各Vue项目之间，目录结构和代码内容相似，甚至于有时候新开一个项目会直接复制旧项目的代码。一言而蔽之，那就是项目之间有着可共用的代码模块。</p>
+<p>假如把其中的一些子目录抽出来作为一个独立仓库，主项目只进行引用，就可以避免这些可共用的代码不可靠地进行人工复制，代码分散管理更新的问题。</p>
+<h3 id="常用命令解释及易误解的地方"><a href="#常用命令解释及易误解的地方" class="headerlink" title="常用命令解释及易误解的地方"></a>常用命令解释及易误解的地方</h3><p>以下<strong>常用命令</strong>部分基本来自于<a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules" target="_blank" rel="noopener">官方指南</a></p>
+<p>克隆远程仓库作子模块<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git submodule add &lt;remote-repo-url&gt; [local-path=.]</span><br></pre></td></tr></table></figure></p>
+<p>显示子模块的diff信息<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git diff --cached --submodule</span><br></pre></td></tr></table></figure></p>
+<p>克隆（<code>git clone</code>）带有子模块的项目后，需要初始化并拉取子模块<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">git submodule init</span><br><span class="line">git submodule update</span><br><span class="line"><span class="meta">#</span> 上面两命令的组合，一般直接用组合命令</span><br><span class="line">git submodule update --init</span><br><span class="line"><span class="meta">#</span> 又或者加上 --recursive 拉取嵌套的子模块（子模块本身又有子模块）</span><br><span class="line">git submodule update --init --recursive</span><br><span class="line"><span class="meta">#</span> 或者在clone时加上 --recurse-submodules选项自动完成拉取</span><br><span class="line">git clone --recurse-submodules &lt;main-project-repo-url&gt;</span><br></pre></td></tr></table></figure></p>
+<p>当需要更新子模块时，切换到子模块的目录，使用常规的拉取上游更新的命令<code>git fetch</code>和<code>git merge</code>（或直接<code>git pull</code>）<br>或直接使用<code>git submodule update --remote [submodule-path]</code>就不用切目录进行手动更新。</p>
+<p>上面快捷命令默认拉取的是master分支，如果想默认拉取其他分支，则进行如下配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -f &lt;git-modules-config-path&gt; 表示指定.gitmodules文件路径</span></span><br><span class="line">git config -f .gitmodules submodule.&lt;submodule-name&gt;.branch &lt;branch-name&gt;</span><br></pre></td></tr></table></figure></p>
+<p>进行下面的配置，可以让git status显示子模块的status<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config status.submodulesummary 1</span><br></pre></td></tr></table></figure></p>
+<p>当不想每次diff更新时都要添加submodule选项，可以进行如下配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global diff.submodule <span class="built_in">log</span></span><br></pre></td></tr></table></figure></p>
+<p>类似于<code>git clone</code>，<code>git pull</code>如果要同时拉取子模块，也需要添加相关的选项<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git pull --recurse-submodules</span><br><span class="line"><span class="comment"># 或者分开进行</span></span><br><span class="line">git pull</span><br><span class="line">git submodule update --init --recursive</span><br></pre></td></tr></table></figure></p>
+<p>使用merge选项可以合并远程更新，如果不添加<code>--merge</code>，默认使用<code>--checkout</code>，直接检出commit。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># --remote 选项的作用是假如子模块有追踪远程的分支，那将会拉取该上游分支进行同步，否则会检出主模块当前commit对应的子模块的commit</span></span><br><span class="line"> git submodule update --remote --merge</span><br></pre></td></tr></table></figure></p>
+<p>如果发生冲突，可以跟普通仓库一样，到对应的子模块目录处理冲突，然后提交。由于子模块有新的提交（commit），回到主模块目录输入<code>git status</code>也会提示需要<code>git add</code>子模块的目录。</p>
+<p>当在主仓库推送更新时可以使用<code>recurse-submodules</code>选项，避免没有推送子模块更新的情况。<strong>假如子模块更新没有推送到子模块的远程仓库，那么当其他成员，拉取主仓库时将会报错，提示不能从远程拉取对应的子模块的版本。</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这个只会提示你有子模块还没推送</span></span><br><span class="line">git push --recurse-submodules=check</span><br><span class="line"><span class="comment"># or</span></span><br><span class="line">git push --recurse-submodules=on-demand</span><br></pre></td></tr></table></figure></p>
+<h4 id="在实践中出现的疑问"><a href="#在实践中出现的疑问" class="headerlink" title="在实践中出现的疑问"></a>在实践中出现的疑问</h4><p>Q1： <code>git submodule</code>跟直接<code>clone</code>子模块到子目录的区别在哪里。</p>
+<p>A1：直接<code>clone</code>不能与主模块产生关联，而<code>git submodule</code>会在工程目录下添加<code>.gitsubmoules</code>文件，声明所有的子模块所在的目录及它们的远程仓库地址等相关信息。第二点，其实是理解<code>submodule</code>机制的关键，子模块不论因什么原因（未staged的change、untracked的文件、checkout到其他版本等）产生内容变化，在主模块目录输入<code>git status</code>都会显示子模块目录有更改。主模块在判断子模块是否有更改是与<strong>主模块当前版本对应的子模块版本</strong>进行比较。</p>
+<p>主模块在<code>git add</code>文件时是不会添加子模块目录下的内容，而是直接<code>add</code>子模块目录。子模块目录以主模块的角度来看，是一个记录版本号的<code>.txt</code>文件，记录的版本号与子模块当前版本同步。</p>
+<p>这一点可以在主模块拉取远程更新，子模块目录发生冲突的时候可以体现。显示的冲突会显示成类似下面的形式，下面的英文字符是commit的SHA:<br><figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;&lt;&lt; a/src/components (Current Change)</span><br><span class="line"><span class="comment">+++ abcdefghijklmnopqrst</span></span><br><span class="line">&gt;&gt;&gt; b/src/components (Incoming Change)</span><br><span class="line"><span class="comment">+++ ghijklmnopqrstuvwxyz</span></span><br></pre></td></tr></table></figure></p>
+<p>Q2：怎么把分支B的子目录变成子模块，假设分支A的该子目录已经是子模块了。</p>
+<p>A2：切到分支B，然后checkout 分支A的<code>.gitmodules</code>文件（注意这里如果直接初始化(<code>git submodule update --init</code>)子模块是无效的，道理可参见上一个问题的解释，因为此时子模块没有指定一个版本）。切到分支B后，有两种方式完成这个任务：</p>
+<ol>
+<li>删除子目录的内容，通过 <code>git submodule add</code> 克隆远程仓库到指定子目录</li>
+<li><code>checkout</code>分支A的<code>.gitmodules</code>文件（注意这里如果直接初始化(<code>git submodule update --init</code>)子模块是无效的，道理可参见上一个问题的解释，因为此时子模块所在目录没有任何记录为子模块的历史，没有版本绑定）。然后checkout 分支A的对应子目录即可。</li>
+</ol>
+<h3 id="小提示"><a href="#小提示" class="headerlink" title="小提示"></a>小提示</h3><ul>
+<li><p>submodule下有一个<code>foreach</code>的子命令挺实用的，它的机制类似于<code>cd</code>到每个子模块目录，然后执行一段shell脚本。</p>
+<ul>
+<li>example：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 显示各个子模块的status</span></span><br><span class="line">git submodule foreach <span class="string">'git status'</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>官方指南上记载了三个<code>git alias</code>的配置，可以使用缩写执行一些常用命令。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ! 表示命令可以是普通的shell命令而不用是git 的子命令</span></span><br><span class="line"><span class="comment"># 在windows中需要把'!'"git diff ..." 改成 "! git diff ..."</span></span><br><span class="line">git config alias.sdiff <span class="string">'!'</span><span class="string">"git diff &amp;&amp; git submodule foreach 'git diff'"</span></span><br><span class="line">git config alias.spush <span class="string">'push --recurse-submodules=on-demand'</span></span><br><span class="line">git config alias.supdate <span class="string">'submodule update --remote --merge'</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="附记"><a href="#附记" class="headerlink" title="附记"></a>附记</h3><p>最开始公司里提出用<code>submodule</code>并不是为了共用代码，而是为了在前后端代码并存的项目中，对前后端代码分别使用子模块管理，进行分隔，互不干涉。</p>
+<p>对于共用代码的方案，git还有一个好像在某些版本不是内置的命令<code>subtree</code>，稍微了解了一下，好像<code>subtree</code>会把子模块的内的文件更改也记录到主模块中。个人觉得<code>submodule</code>的对于各模块的分割功能更好，而且是<code>git</code>内置的，算是标准功能吧。</p>
+<p>虽然<code>submodule</code>的使用需要一点额外的学习成本，但只要了解了它的机制，用起来也能得心应手的。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/03/18/experience-of-using-git-submodule/" data-id="ckbxv4jl70000e0u1w9pnlpcx" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/submodule/">submodule</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-yox-research-template-expression-episode" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/" class="article-date">
@@ -759,52 +836,6 @@
 
 
   
-    <article id="post-web-front-end-knowledge-memo(JS)-ep3" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep3/" class="article-date">
-  <time datetime="2019-11-02T13:41:15.157Z" itemprop="datePublished">2019-11-02</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep3/">web前端知识学习笔记-JS篇(3)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="变量提升与函数提升"><a href="#变量提升与函数提升" class="headerlink" title="变量提升与函数提升"></a>变量提升与函数提升</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">outter</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> inner;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">inner</span> (<span class="params"></span>) </span>&#123;&#125;</span><br><span class="line">    <span class="keyword">var</span> inner;</span><br><span class="line">    inner = <span class="number">9</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">typeof</span> outter() <span class="comment">// 'function';</span></span><br></pre></td></tr></table></figure>
-<p>变量提升和函数提升指的是JS预编译的一个操作。</p>
-<p>首先对于<code>var</code>声明的变量，只存在全局作用域和函数作用域，不像<code>let</code>和<code>const</code>还有块作用域。</p>
-<ol>
-<li>变量提升（指<code>var</code>声明的变量）指的是作用域内出现的变量声明会把声明放到作用域的开头</li>
-<li>函数提升是指除了1外的操作，还会把函数提前赋值给变量</li>
-</ol>
-<p>根据上面两个规则，上面的代码经预编译会变成如下形式：<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">outter</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> inner;</span><br><span class="line">    inner = <span class="function"><span class="keyword">function</span> <span class="title">inner</span>(<span class="params"></span>) </span>&#123;&#125;</span><br><span class="line">    <span class="keyword">return</span> inner;</span><br><span class="line">    inner = <span class="number">9</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/02/web-front-end-knowledge-memo(JS)-ep3/" data-id="ck64y70w8000sjgu1e2sddc2d" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -823,7 +854,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/submodule/">submodule</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
     </div>
   </div>
 
@@ -833,7 +864,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 10px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12.5px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 12.5px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12.5px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/submodule/" style="font-size: 10px;">submodule</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
     </div>
   </div>
 
@@ -842,7 +873,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
     </div>
   </div>
 
@@ -859,6 +890,10 @@
           </li>
         
           <li>
+            <a href="/study-memo/2020/03/18/experience-of-using-git-submodule/">git submodule的使用经验</a>
+          </li>
+        
+          <li>
             <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/">Yox框架研究（1）—模板表达式编译篇</a>
           </li>
         
@@ -868,10 +903,6 @@
         
           <li>
             <a href="/study-memo/2020/01/01/2D-bin-packing-algorithm/">一种2D装箱算法</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2019/12/27/from-whistle-hot-reload-plugin-develoment-to-websocket-mechanism/">从whistle热重载插件到websocket工作原理</a>
           </li>
         
       </ul>
