@@ -62,6 +62,87 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-misunderstandings-of-nginx-location-config" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/" class="article-date">
+  <time datetime="2020-08-16T06:12:08.966Z" itemprop="datePublished">2020-08-16</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/">nginx location指令配置的误解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="源起"><a href="#源起" class="headerlink" title="源起"></a>源起</h3><p>可能因为nginx轻量，功能齐全，跨平台，高性能（由C编写）的原因，在不同语言编写的web应用中，都能看到它的身影。</p>
+<p>最近因为想用docker配置php服务器，最后的目标是放在线下的服务器中，为测试人员提供多个测试环境。</p>
+<p>在这个过程中，由于我对nginx的location指令的理解有误，导致在转发资源的路由配置上卡了许久。</p>
+<p>后面经过经过自己的调试和重读nginx的手册，终于弄明白了。</p>
+<h3 id="误区"><a href="#误区" class="headerlink" title="误区"></a>误区</h3><ol>
+<li><code>location指令</code>是类似<code>express（node.js）</code>的中间件， 请求会在各个匹配的location中进行传递。</li>
+</ol>
+<p>产生这个误解是因为看到这个配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里只看到添加Expires的响应头，没看到返回响应主体的指令</span></span><br><span class="line">location ~ .*\.(js|css|mp4)?$ &#123;</span><br><span class="line">  expires 1h;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 因为上面指令的存在，导致后面的这个指令一直未能匹配到</span></span><br><span class="line">location ~ ^/resource/(.*) &#123;</span><br><span class="line">  <span class="keyword">if</span> (!-f <span class="variable">$request_filename</span>) &#123;</span><br><span class="line">    rewrite ^/(.*?)/(.*?)/(.*?)/(.*)$ /code/mapi/<span class="variable">$2</span>/<span class="variable">$3</span>/<span class="variable">$1</span>/<span class="variable">$4</span> last;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong>正解</strong>：对于每个请求，所有的处理都只会在一个location指令内完成所有的处理，上面第一条指令没有显式设置返回主体是因为默认是返回请求路径的静态文件。这一点类似<code>webpack</code>的<code>output</code>设置<code>public path</code>和<code>path</code>，默认是一个静态资源的转发服务器。</p>
+<ol>
+<li><code>location指令</code>匹配的优先顺序，主要是看规则的匹配字符串的长度。不管规则是不是正则表达式，都会当成正则表达式处理（类似<code>javascript</code>的<code>String.prototype.replace</code>的第一个参数可以是字符串）。</li>
+</ol>
+<p>但如果按照上述的逻辑看的，感觉有点与事实相悖，因为<code>^/resource/(.*)</code>和<code>.*\.(js|css|mp4)?$</code>，如果请求是<code>/resource/teacher/3.0/areaSwitch.js</code>，理论上两个规则都能匹配全部字符，那这时是按照怎样的规则呢？</p>
+<p>在某个博客的文章中找到了如下的文字说明：</p>
+<blockquote>
+<p>在nginx的location和配置中location的顺序没有太大关系。正location表达式的类型有关。相同类型的表达式，字符串长的会优先匹配。<br>以下是按优先级排列说明：</p>
+</blockquote>
+<blockquote>
+<p>第一优先级：等号类型（=）的优先级最高。一旦匹配成功，则不再查找其他匹配项。</p>
+</blockquote>
+<blockquote>
+<p>第二优先级：^~类型表达式。一旦匹配成功，则不再查找其他匹配项。</p>
+</blockquote>
+<blockquote>
+<p>第三优先级：正则表达式类型（~ ~*）的优先级次之。如果有多个<br>location的正则能匹配的话，则使用正则表达式最长的那个。</p>
+</blockquote>
+<blockquote>
+<p>第四优先级：常规字符串匹配类型。按前缀匹配。</p>
+</blockquote>
+<p>说是优先用正则表达式最长的那个。那把<code>^/resource/(.*)</code>改成<code>/resource/teacher/3.0/(.*)</code>是不是就可以了呢？发现也是不行。</p>
+<p>最后只能在权威的资料（官方手册）中找答案了。</p>
+<p>匹配逻辑只有简单的一段：</p>
+<blockquote>
+<p>A location can either be defined by a prefix string, or by a regular expression. Regular expressions are specified with the preceding “~*” modifier (for case-insensitive matching), or the “~” modifier (for case-sensitive matching). <strong>To find location matching a given request, nginx first checks locations defined using the prefix strings (prefix locations). Among them, the location with the longest matching prefix is selected and remembered. Then regular expressions are checked, in the order of their appearance in the configuration file. The search of regular expressions terminates on the first match, and the corresponding configuration is used. If no match with a regular expression is found then the configuration of the prefix location remembered earlier is used.</strong></p>
+</blockquote>
+<p>最重要的是加粗的那段，翻译过来整个流程是：</p>
+<ol>
+<li>首先遍历各个前缀匹配规则（所谓的前缀匹配，简单来说就是<strong>开头字符串匹配</strong>， 如<code>/resource/teacher</code>）， 然后记下匹配到的最长的前缀。</li>
+<li>然后进入到正则匹配阶段（遍历各个正则表达式的规则），只要发现有一个匹配则会停止遍历。</li>
+<li>假如第2步找不到匹配，则应用第1步记下的那个最长的规则。</li>
+<li>整个流程有两个特例，分别是规则中的<code>=</code>和<code>^~</code>两个修饰符。<code>^~</code>表示假如当前规则是最长前缀，则跳过正则匹配阶段，直接应用当前规则；<code>=</code>则表示请求路径与规则字符相同，就直接应用当前规则。</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>之前我一直被location的修饰符吸引注意力，而没留意整个匹配过程的细节，现在已豁然开朗。另外一点是查资料最好还是通过英文材料。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/" data-id="ckdwr8ent0000dsu1o438pfh1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/location指令/">location指令</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/nginx/">nginx</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-optimization-techniques-for-better-performance-of-vue-app" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" class="article-date">
@@ -762,80 +843,6 @@
 
 
   
-    <article id="post-web-front-end-knowledge-memo(Network)-ep1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/" class="article-date">
-  <time datetime="2019-11-03T13:03:28.048Z" itemprop="datePublished">2019-11-03</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/">web前端知识学习笔记-网络篇(1)</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h3 id="HTTP处于TCP-IP（互联网协议套件）的应用层，是一种无状态的协议。"><a href="#HTTP处于TCP-IP（互联网协议套件）的应用层，是一种无状态的协议。" class="headerlink" title="HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。"></a>HTTP处于TCP/IP（互联网协议套件）的应用层，是一种无状态的协议。</h3><p><strong>（我的理解是无状态协议表示，每次请求应答都是独立的，不需要保证是否按顺序收发，不会维护client和server的状态，单次请求应答完成以后自动结束）</strong></p>
-<h3 id="一次HTTP操作简化流程"><a href="#一次HTTP操作简化流程" class="headerlink" title="一次HTTP操作简化流程"></a>一次HTTP操作简化流程</h3><ol>
-<li>发送HTTP请求（浏览器输入地址或XHR等方式）</li>
-<li>通过DNS获取请求地址对应的IP地址</li>
-<li>通过TCP/IP，与目标地址建立起TCP连接</li>
-<li>TCP连接发送客户端的HTTP请求报文</li>
-<li>客户端通过TCP连接发送HTTP应答报文</li>
-<li>TCP连接关闭，如果HTTP请求报头中设置了<code>Connection:keep-alive</code>，则TCP会继续保持连接</li>
-</ol>
-<p><strong>值得注意的是keep-alive虽然是通过HTTP的报头设置的，但是实际执行的是在TCP中，所以不与HTTP是无状态的冲突</strong></p>
-<p><strong>短连接</strong>是无<code>keep-alive</code>，请求完成以后，TCP自动关闭；<br><strong>长连接</strong>则相反。</p>
-<p><strong>管线化（with pipelining）</strong>是指长连接中客户端无需等待上一次请求完成，再去做第二次请求，<strong>非管线化（without pipelining）</strong>则需要做这样的等待。<br><em>但实际上没有看过非管线化的情况（如果有，还请热心告诉我）</em></p>
-<h3 id="格式示意图"><a href="#格式示意图" class="headerlink" title="格式示意图"></a>格式示意图</h3><p>请求报文：<br><img src="css/images/http-request-format.png" alt=""></p>
-<p>响应报文：<br><img src="css/images/http-response-format.png" alt=""><br><a href="https://juejin.im/post/5ad4465d6fb9a028da7d0117" target="_blank" rel="noopener">图片来源</a></p>
-<h3 id="常见的响应的状态码"><a href="#常见的响应的状态码" class="headerlink" title="常见的响应的状态码"></a>常见的响应的状态码</h3><p><strong>200</strong>(OK) <strong>客户端发过来的数据被正常处理</strong></p>
-<p><strong>204</strong>(Not Content) <strong>正常响应，没有实体</strong></p>
-<p><strong>206</strong>(Partial Content) <strong>范围请求，返回部分数据，响应报文中由Content-Range指定实体内容</strong></p>
-<hr>
-<p><strong>301</strong>(Moved Permanently) <strong>永久重定向</strong></p>
-<p><strong>302</strong>(Found) <strong>临时重定向，重定向后的请求方法可作改变</strong></p>
-<p><strong>303</strong>(See Other) <strong>重定向后的请求方法变为GET</strong></p>
-<p><strong>304</strong>(Not Modified) <strong>状态未改变， 配合(If-Match、If-Modified-Since、If-None_Match、If-Range、If-Unmodified-Since)，与<em>HTTP缓存</em>相关</strong></p>
-<p><strong>307</strong>(Temporary Redirect) <strong>临时重定向，不应改变其请求方法</strong></p>
-<hr>
-<p><strong>400</strong>(Bad Request) <strong>请求报文语法错误</strong></p>
-<p><strong>401</strong>(unauthorized) <strong>需要认证</strong></p>
-<p><strong>403</strong>(Forbidden) <strong>服务器拒绝访问对应的资源</strong></p>
-<p><strong>404</strong>(Not Found) <strong>服务器上无法找到资源</strong></p>
-<p><strong><em>401跟403不同的地方是，401可能是因为你没有登录，而403表示可能你没有相关的权限，有一次我通过npm发布包，错误提示403，我还错误地想是不是因为我没有登录呢，实际上是我的包名含有private scope，而我没有权限导致的</em></strong></p>
-<hr>
-<p><strong>500</strong>(Internal Server Error)<strong>服务器故障</strong></p>
-<p><strong>503</strong>(Service Unavailable) <strong>服务器处于超负载或正在停机维护</strong></p>
-<h4 id="从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP-IP层间传输中，大致存在这样的迭代关系"><a href="#从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP-IP层间传输中，大致存在这样的迭代关系" class="headerlink" title="从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP/IP层间传输中，大致存在这样的迭代关系"></a>从维基百科的配图中，虽然是说明UDP的，但也可以看出在TCP/IP层间传输中，大致存在这样的迭代关系</h4><p>(<strong>n</strong>表示层序)</p>
-<p><img src="https://latex.codecogs.com/png.latex?packet_%7Bn%20-%201%7D%20%3D%20header_%7Bn%20-%201%7D%20&plus;%20packet_%7Bn%7D" alt=""></p>
-<p><img src="css/images/UDP_encapsulation.png" alt=""></p>
-<p><em>本文内容大部分基于<a href="">5分钟让你明白HTTP协议</a><a href="https://juejin.im/post/5ad4465d6fb9a028da7d0117" target="_blank" rel="noopener">https://juejin.im/post/5ad4465d6fb9a028da7d0117</a></em></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/03/web-front-end-knowledge-memo(Network)-ep1/" data-id="ck64y70wa000tjgu1x3cfff87" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/interview/">interview</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -854,7 +861,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/submodule/">submodule</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/location指令/">location指令</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/nginx/">nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/submodule/">submodule</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
     </div>
   </div>
 
@@ -864,7 +871,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 12.5px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12.5px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/submodule/" style="font-size: 10px;">submodule</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 15px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 17.5px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 12.5px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 15px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/location指令/" style="font-size: 10px;">location指令</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12.5px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/submodule/" style="font-size: 10px;">submodule</a> <a href="/study-memo/tags/template/" style="font-size: 12.5px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 17.5px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
     </div>
   </div>
 
@@ -873,7 +880,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
     </div>
   </div>
 
@@ -884,6 +891,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/">nginx location指令配置的误解</a>
+          </li>
         
           <li>
             <a href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/">Vue应用性能调优技巧</a>
@@ -899,10 +910,6 @@
         
           <li>
             <a href="/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/">按照官方指南实践vue SSR</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2020/01/01/2D-bin-packing-algorithm/">一种2D装箱算法</a>
           </li>
         
       </ul>
