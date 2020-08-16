@@ -98,21 +98,7 @@
 </ol>
 <p>但如果按照上述的逻辑看的，感觉有点与事实相悖，因为<code>^/resource/(.*)</code>和<code>.*\.(js|css|mp4)?$</code>，如果请求是<code>/resource/teacher/3.0/areaSwitch.js</code>，理论上两个规则都能匹配全部字符，那这时是按照怎样的规则呢？</p>
 <p>在某个博客的文章中找到了如下的文字说明：</p>
-<blockquote>
-<p>在nginx的location和配置中location的顺序没有太大关系。正location表达式的类型有关。相同类型的表达式，字符串长的会优先匹配。<br>以下是按优先级排列说明：</p>
-</blockquote>
-<blockquote>
-<p>第一优先级：等号类型（=）的优先级最高。一旦匹配成功，则不再查找其他匹配项。</p>
-</blockquote>
-<blockquote>
-<p>第二优先级：^~类型表达式。一旦匹配成功，则不再查找其他匹配项。</p>
-</blockquote>
-<blockquote>
-<p>第三优先级：正则表达式类型（~ ~*）的优先级次之。如果有多个<br>location的正则能匹配的话，则使用正则表达式最长的那个。</p>
-</blockquote>
-<blockquote>
-<p>第四优先级：常规字符串匹配类型。按前缀匹配。</p>
-</blockquote>
+<p><img src="/study-memo/assets/images/nginx-location-priority.jpg" alt="nginx location配置优先级"></p>
 <p>说是优先用正则表达式最长的那个。那把<code>^/resource/(.*)</code>改成<code>/resource/teacher/3.0/(.*)</code>是不是就可以了呢？发现也是不行。</p>
 <p>最后只能在权威的资料（官方手册）中找答案了。</p>
 <p>匹配逻辑只有简单的一段：</p>
