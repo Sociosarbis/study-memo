@@ -5,15 +5,20 @@
   
 
   
-  <title>Tag: git | a house in the woods</title>
+  <title>KMP算法笔记 | a house in the woods</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="a house in the woods">
-<meta property="og:url" content="https://sociosarbis.github.io/study-memo/tags/git/index.html">
+  <meta name="description" content="前言最近一个月，坚持每天上Leetcode做一道算法题。这周每天推送的算法题，大部份都跟字符串有关且有两天的较困难的题目都用到了KMP算法，KMP算法步骤不算复杂，但也需要我花了点时间去理解，下面对我的理解进行记述。 主文结合代码讲解：1234567891011121314String s = &quot;babbbabbaba&quot;;Integer len = s.length();Integer fail[">
+<meta name="keywords" content="algorithm,KMP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="KMP算法笔记">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2020/08/30/memo-for-KMP-algorithm/index.html">
 <meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言最近一个月，坚持每天上Leetcode做一道算法题。这周每天推送的算法题，大部份都跟字符串有关且有两天的较困难的题目都用到了KMP算法，KMP算法步骤不算复杂，但也需要我花了点时间去理解，下面对我的理解进行记述。 主文结合代码讲解：1234567891011121314String s = &quot;babbbabbaba&quot;;Integer len = s.length();Integer fail[">
 <meta property="og:locale" content="zh">
+<meta property="og:updated_time" content="2020-08-30T09:13:15.693Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
+<meta name="twitter:title" content="KMP算法笔记">
+<meta name="twitter:description" content="前言最近一个月，坚持每天上Leetcode做一道算法题。这周每天推送的算法题，大部份都跟字符串有关且有两天的较困难的题目都用到了KMP算法，KMP算法步骤不算复杂，但也需要我花了点时间去理解，下面对我的理解进行记述。 主文结合代码讲解：1234567891011121314String s = &quot;babbbabbaba&quot;;Integer len = s.length();Integer fail[">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -60,69 +65,57 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2020" class="archive-year">2020</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2020/03/18/experience-of-using-git-submodule/" class="archive-article-date">
-  <time datetime="2020-03-18T01:18:32.233Z" itemprop="datePublished">Mar 18</time>
+        <section id="main"><article id="post-memo-for-KMP-algorithm" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/08/30/memo-for-KMP-algorithm/" class="article-date">
+  <time datetime="2020-08-30T08:48:54.894Z" itemprop="datePublished">2020-08-30</time>
 </a>
-      
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2020/03/18/experience-of-using-git-submodule/">git submodule的使用经验</a>
+    <h1 class="article-title" itemprop="name">
+      KMP算法笔记
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
+    <div class="article-entry" itemprop="articleBody">
       
-        </div></section>
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/study-memo/archives/2018" class="archive-year">2018</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/" class="archive-article-date">
-  <time datetime="2018-10-11T15:18:34.252Z" itemprop="datePublished">Oct 11</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/study-memo/2018/10/11/maintain-the-same-hexo-project-with-diffrent-devices/">使用不用终端维护同一个hexo博客</a>
-    </h1>
-  
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近一个月，坚持每天上Leetcode做一道算法题。这周每天推送的算法题，大部份都跟字符串有关且有两天的较困难的题目都用到了KMP算法，KMP算法步骤不算复杂，但也需要我花了点时间去理解，下面对我的理解进行记述。</p>
+<h2 id="主文"><a href="#主文" class="headerlink" title="主文"></a>主文</h2><p>结合代码讲解：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">"babbbabbaba"</span>;</span><br><span class="line">Integer len = s.length();</span><br><span class="line">Integer fail[] = <span class="keyword">new</span> Integer[len];</span><br><span class="line">Arrays.fill(fail, -<span class="number">1</span>);</span><br><span class="line">Integer j = -<span class="number">1</span>;</span><br><span class="line"><span class="keyword">for</span> (Integer i = <span class="number">1</span>;i &lt; len;i++) &#123;</span><br><span class="line">    j = fail[i - <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">while</span> (j != -<span class="number">1</span> &amp;&amp; s.charAt(j + <span class="number">1</span>) != s.charAt(i)) &#123;</span><br><span class="line">        j = fail[j];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (s.charAt(j + <span class="number">1</span>) == s.charAt(i)) &#123;</span><br><span class="line">        fail[i] = j + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>对于字符串<code>s</code>，KMP的核心任务是先构建一个<code>fail</code>数组，<code>fail</code>数组成员<code>fail[i]</code>的值<code>k</code>表示<code>s[0:k - 1] == s[i + 1 - k:i + 1]</code>(以<code>i</code>为末位的长度为<code>k</code>的子字符串等于<code>s</code>的<code>k</code>长前缀)。</p>
+<p>上面<code>12~13</code>行比较好理解，由于上一次比较的结果是<code>j  = fail[i - 1]</code>，那假如这次比较也相等，自然<code>fail[i] = fail[i - 1] + 1 = j + 1</code></p>
 
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/08/30/memo-for-KMP-algorithm/" data-id="ckeh8k4d50000ggu125osjoyv" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/KMP/">KMP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li></ul>
 
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">nginx location指令配置的误解</div>
+    </a>
+  
+</nav>
+
+  
+</article>
 
 </section>
         
