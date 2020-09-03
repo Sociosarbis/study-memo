@@ -15,7 +15,7 @@
 <meta property="og:site_name" content="a house in the woods">
 <meta property="og:description" content="前言前段时间在做项目的时候，遇到某组图标需要从iconfont改为使用png的情况。这种情况，由于图标本身是比较小的而数量又比较多，为了减少大量http请求的成本，需要把这些图标做成一张sprite图。在不劳烦UI的同学的情况下，那我自行去生成了。本身就有一些现成的网站有这类的服务了，如toptal.com；命令行的话，有spritesmith。其中里面的有一个叫binary-tree的排列方式引">
 <meta property="og:locale" content="zh">
-<meta property="og:updated_time" content="2020-01-01T15:26:19.023Z">
+<meta property="og:updated_time" content="2020-09-03T14:55:18.232Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="一种2D装箱算法">
 <meta name="twitter:description" content="前言前段时间在做项目的时候，遇到某组图标需要从iconfont改为使用png的情况。这种情况，由于图标本身是比较小的而数量又比较多，为了减少大量http请求的成本，需要把这些图标做成一张sprite图。在不劳烦UI的同学的情况下，那我自行去生成了。本身就有一些现成的网站有这类的服务了，如toptal.com；命令行的话，有spritesmith。其中里面的有一个叫binary-tree的排列方式引">
@@ -92,7 +92,7 @@
 <li>把图片数组按照它们的面积大小，从大到小排列，并把最大的那张图片放到左上角，并把他的x,y,width,height作为初始root的数值</li>
 <li>遍历所有的图片，一个个对他们进行放置。</li>
 <li>放置的规则是从root出发，<ol>
-<li>如果<strong>当前遍历的图片的width和height都不大于当前node</strong>（<strong><em>条件1</em></strong>）， 把<strong>当前的遍历的图片A</strong>放在<strong>node</strong>的左上角, 然后进行<strong>分裂</strong>操作，给<strong>node</strong>添加<strong>down</strong>和<strong>right</strong>两个<strong>子node</strong>, 分别未A的<strong>右上方</strong>到node的<strong>右下方</strong>和<br>A的<strong>左下方</strong>到node的<strong>右下方</strong>两个区域。</li>
+<li>如果<strong>当前遍历的图片的width和height都不大于当前node</strong>（<strong><em>条件1</em></strong>）， 把<strong>当前的遍历的图片A</strong>放在<strong>node</strong>的左上角, 然后进行<strong>分裂</strong>操作，给<strong>node</strong>添加<strong>down</strong>和<strong>right</strong>两个<strong>子node</strong>, 分别为A的<strong>右上方</strong>到node的<strong>右下方</strong>和<br>A的<strong>左下方</strong>到node的<strong>右下方</strong>两个区域。</li>
 <li>第1步中用的是<strong>当前node</strong>这个词的原因是，假如<strong>一个node（包括root）分裂过</strong>，那么第一步就会从<strong>他的down或者right的子node</strong>中，寻找具有足够空间放置的一方（是一个递归的过程）。</li>
 <li>假如不满足<strong>条件1</strong>，root就会进行<strong>grow</strong>操作，<strong>grow</strong>在放置新图片在右方还是下方的问题上会考虑两个因素：<ol>
 <li>如果新图片的宽小于root的宽表示可以向下增长，高小于root的高，表示可以向右增长。</li>
