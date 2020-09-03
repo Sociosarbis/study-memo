@@ -142,12 +142,9 @@ console.log(require('../dll/a'));
 console.log(require('beta/beta'));
 console.log(require('beta/b'));
 console.log(require('beta/c'));
-// 上面require的路径，一种是相对路径../dll/* 一种是scope类路径 beta/*，
-// 对于路径解析下面会有进一步的说明，
-// 需要注意的是假如是相对路径的require，那么对应的文件必须真实存在于该路径，我的理解是相对路径时，
-// webpack会强制进行对应路径的搜索，如果文件不存在就会报错，
-// 找到以后才会把module的处理交给后面的plugins。（未经源码验证）
 ```
+
+上面require的路径，一种是**相对路径../dll/** 一种是**scope类路径 beta/**，对于路径解析下面会有进一步的说明。
 
 plugins 里有两个 webpack.DllReferencePlugin，分别对应两个打包好的 dll 文件。
 第一个 DllReferencePlugin 的 context 属性的意思是，当一个 require 解析后的 request 路径是以这个 context 开头时，那 webpack 就不会去把这个文件的内容打包进去，
@@ -207,7 +204,17 @@ compiler.hooks.compile.tap('DllReferencePlugin', params => {
   // 也就是说代理到dll-reference alpha_21c1490edb92ec8e9390上
     
 })
+```
 
+需要注意的是假如是相对路径的`require`，那么对应的文件必须真实存在于该路径。
+这是由于当使用`scope`类型的`request`时，`DelegatedModuleFactoryPlugin`会在`normalModuleFactory`的`factory`的钩子调用时
+就已经创建了一个`DelegatedModule`，如果是相对路径的情况，则要等到`module`钩子的时候才创建。`factory`和`module`两个周期之间，还有`resolver`钩子，假如`resolver`阶段特定不到对应路径的文件，则会报错。
+
+**2020.09.04更新**
+`scope`类型的`request`的合法条件经过下面的步骤替换掉`scope`后的`innerRequest`需要在`manifest.json`中存在。
+相对路径类型的`request`，除了要满足可在文件系统中找到这个条件外，同样也需要替换掉`context`后的`request`的`key`在在`manifest.json`中存在。
+
+```javascript
 // 下面是DelegatedModuleFactoryPlugin的执行流程
 apply(normalModuleFactory) {
   const scope = this.options.scope;
