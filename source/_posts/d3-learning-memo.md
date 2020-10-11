@@ -19,6 +19,8 @@ tags:
 
 # API概念说明
 
+## d3.selection
+
 `d3`的DOM操作的风格十分类似`Jquery`
 
 1. 创建DOM元素并返回一个类似`Jquery`集合的`Selection`对象
@@ -49,4 +51,23 @@ selection.datum(arr)
 ```typescript
 let arr: any[]
 selection.data(arr).join('rect'/** 元素的标签名 */)
+// 与上面等价
+selection.data(arr).enter().append('rect')
 ```
+
+5. `selection.call`接收一个以`selection`为参数的回调函数，目前看来用途主要给`selection`添加一些子元素，这样就不会改变外部链式调用的主体。
+
+```typescript
+selection.call((s) => s.append('path'))
+```
+
+6. `selection.each`方法并不会回传一个子`selection`，而是回传三个参数`d`（**子data**）, `i`（索引），`nodesGroup`（`selection`内部的DOM集合），回调函数的`this`等同于`nodesGroup[i]`
+```typescript
+selection.each(function (d, i, nodesGroup) {
+  // 由于并不是子selection，所以需要进行select把DOM变成d3的selection对象
+  d3.select(this)
+})
+```
+
+## d3.Shape
+1. `d3.lineRadial`与`d3.line`作用同样都是生成线段，不同的是`lineRadial`的坐标系是**极坐标系**，而且需要注意的是**0rad**是**12点方向，角度增长为顺时针**，每个点由`angle`和`radius`方法定义。
