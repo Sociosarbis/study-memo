@@ -70,4 +70,14 @@ selection.each(function (d, i, nodesGroup) {
 ```
 
 ## d3.Shape
-1. `d3.lineRadial`与`d3.line`作用同样都是生成线段，不同的是`lineRadial`的坐标系是**极坐标系**，而且需要注意的是**0rad**是**12点方向，角度增长为顺时针**，每个点由`angle`和`radius`方法定义。
+1. `d3.lineRadial`与`d3.line`作用同样都是生成线段，不同的是`lineRadial`的坐标系是**极坐标系**，而且需要注意的是**0 rad**是**12点方向，角度增长为顺时针**，每个点由`angle`和`radius`方法定义。
+
+## d3.polygon
+
+1. `d3.polygonCentroid`，求多边形的中点a。
+
+原理是以`[P_(n - 1), P_n, [0, 0]]`为顶点组成三角形，求出各个三角形的中点`P_m_n`（顶点坐标和除以3）。
+
+然后各个顶点根据权重`W（三角形n的面积 / 所有三角形的面积和）`相加求得。
+
+`三角形的面积 = (V_(n - 1) X（叉积） V_n) * 0.5`
