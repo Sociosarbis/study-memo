@@ -11,9 +11,9 @@
 <meta property="og:title" content="a house in the woods">
 <meta property="og:url" content="https://sociosarbis.github.io/study-memo/index.html">
 <meta property="og:site_name" content="a house in the woods">
-<meta property="og:locale" content="zh">
+<meta property="og:locale">
+<meta property="article:author" content="Sociosarbis">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="a house in the woods">
   
     <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
   
@@ -23,8 +23,10 @@
   
     <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
   
-  <link rel="stylesheet" href="/study-memo/css/style.css">
-</head>
+  
+<link rel="stylesheet" href="/study-memo/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"></head>
 
 <body>
   <div id="container">
@@ -62,6 +64,196 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2021/04/05/some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files/" class="article-date">
+  <time datetime="2021-04-05T07:19:17.378Z" itemprop="datePublished">2021-04-05</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2021/04/05/some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files/">使用rust &amp; webAssembly开发导出excel文件功能后的感想</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>已经超过半年没写过文章了，原因除了肯定会有的懒以外，主要还是因为，<br>其一，根据过去的经验，写一篇文章要花比较长的时间，要先透彻地明白自己所讲的问题；<br>其二，部分学习和总结是已经写成代码了，再写成文字似乎就重复了；<br>其三，只想写一些自觉有新意的内容。</p>
+<p>说回这次的要实现的功能。在以前公司做导出excel文件是放在后端做的，所以当数据量和使用人数过多的时候就出现了接口超时的问题。为了减轻后端的压力，所以这次打算后端提供必要的数据，excel文件由前端生成。</p>
+<p>说到文件生成，我第一时间就想到了<code>web worker</code>和<code>webAssembly</code>的使用，加上之前学了下<code>rust</code>，正好可以学以致用。</p>
+<p>这个功能做完以后，粗略地测试了下，导出一个<code>263KB</code>文件，<code>webAssembly</code>和<code>js</code>的实现的导出速度。<br>webAssembly|js<br>———–|—<br>62ms| 52ms</p>
+<p>所以从效果上来说，<code>webAssembly</code>实现完全是白做了。查了些资料，我觉得原因主要是：</p>
+<ol>
+<li>生成Excel的计算量不大，数据的传送反而占了比较多的时间</li>
+<li>数据要传给<code>webAssembly</code>，需要先转成<code>JSON</code>，再<code>encode</code>为<code>Uint8Array</code>，这个是与<code>JS</code>的实现相比额外的消耗。</li>
+</ol>
+<h3 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h3><p><a target="_blank" rel="noopener" href="https://github.com/Sociosarbis/json2excel">项目地址</a></p>
+<p>这个项目是一个fork项目，除去原有的核心的文件构建逻辑，我做的改动主要有：</p>
+<ol>
+<li>对<code>verticalAlign</code>的支持</li>
+<li>支持数字类型的单元格数据</li>
+<li>添加作为回退方案的<code>js</code>实现</li>
+</ol>
+<ul>
+<li><p>改动1其实只是按照原来的做法，增加对<code>verticalAlign</code>的处理。</p>
+</li>
+<li><p>改动2的问题是对既可能是字符串又可能是数字的数值处理，处理的方法是改成枚举类型，然后还要增加两行宏<code>#[derive(Deserialize)]</code>，<code>#[serde(untagged)]</code>,前者是支持<code>serde</code>库进行反序列化，后者是让<code>serde</code>自动判断反序列转化的类型。详细可以在这里<a target="_blank" rel="noopener" href="https://serde.rs/enum-representations.html">查阅</a></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Deserialize)]</span></span><br><span class="line"><span class="meta">#[serde(untagged)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="class"><span class="keyword">enum</span> <span class="title">Value</span></span> &#123;</span><br><span class="line">    Number(<span class="built_in">f64</span>),</span><br><span class="line">    <span class="built_in">String</span>(<span class="built_in">String</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>改动3是因为webAssembly只有在17年后的浏览器有支持，所以需要<code>js</code>方案作兼容，此方案用到了<code>exceljs</code>这个库，由于是运行在<code>worker</code>环境，不可通过<code>script</code>标签加载，另一方面第三方库是希望作为外部引用的，所以需要给打包生成的<code>worker</code>文件头部增加<code>importScript</code>方法。经过一些资料的查找，只需要设置<code>rollup</code>的<code>output.banner</code>即可</p>
+</li>
+</ul>
+<h3 id="对WebAssembly的认识"><a href="#对WebAssembly的认识" class="headerlink" title="对WebAssembly的认识"></a>对WebAssembly的认识</h3><p>下面讲述自己阅读<code>WebAssembly</code>相关的材料后，梳理出的对<code>WebAssembly</code>的认识。</p>
+<ol>
+<li><p><code>WebAssembly</code>从名字中能看出其两个性质，第一是它有着与汇编语言相似的格式，其指令易于机器执行；第二是它是被设计为面向网络应用的，包括客户端和服务端。</p>
+<ul>
+<li><p>它有两种格式：</p>
+<ol>
+<li><code>.wat</code>（WebAssembly text format file），因为它是文本格式，所以我们可以阅读和编辑，但它不能直接被执行，需要转换为<code>.wasm</code>文件。</li>
+<li><code>.wasm</code>，真正的WebAssembly程序文件，由二进制编码。由于<code>WebAssembly</code>是类汇编的初级语言，所以它可以被如<code>C++</code>和<code>rust</code>等高级语言作为编译对象而生成出来，从这个意义上，它有着不区分开发语言，通用跨平台的特点，就像我们系统中的可执行文件一样。</li>
+</ol>
+</li>
+</ul>
+</li>
+<li><p><code>WebAssembly</code>的开发方式：</p>
+<ol>
+<li>直接编写<code>.wat</code>文件。</li>
+<li>编写高级语言后进行编译。</li>
+</ol>
+<ul>
+<li><p>由于<code>.wat</code>的数据类型目前只有<code>i32 | i64 | f32 | f64</code>4种，虽然可以定义函数，但运算操作是基于栈式虚拟机，比较初级，相比高级语言，编写代码量过大并且与实际业务逻辑的编写习惯相差甚远，所以生产开发是选择<strong>方式2</strong></p>
+</li>
+<li><p>不过为了理解栈式虚拟机和<code>WebAssembly</code>的执行机制，下面通过某个网络安全题目提供的<code>.wasm</code>转译成的<code>.wat</code>内容进行简单说明。</p>
+</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line">(<span class="built_in">module</span></span><br><span class="line">  <span class="comment">// wat中 ;; 相当于 js的 //注释， (;;)相当于 /**/注释</span></span><br><span class="line">  <span class="comment">// 定义 (func (param i32 i32) (result i32)) 参数为2个i32类型的值，返回值为i32类型的函数为按顺序为type 0，即第一个type</span></span><br><span class="line">  (type (;<span class="number">0</span>;) (func (param i32 i32) (result i32)))</span><br><span class="line">  <span class="comment">// 从JS运行时中import Math.min 和 Math.max，分别按顺序为func 0 和 func1 并且指明它们都为type 0，</span></span><br><span class="line">  <span class="comment">// 这里import为使用WebAssembly.instantiateStreaming(response, imports)或WebAssembly.instantiate(buffer, imports)实例化WebAssembly时的第二个参数。</span></span><br><span class="line">  <span class="comment">//　此例中可以为&#123; Math: &#123; min: Math.min, max: Math.max &#125; &#125;，同时也可以看出在`.wat`中是以空格分隔imports中的引用层级的</span></span><br><span class="line">  (<span class="keyword">import</span> <span class="string">&quot;Math&quot;</span> <span class="string">&quot;min&quot;</span> (func (;<span class="number">0</span>;) (type <span class="number">0</span>)))</span><br><span class="line">  (<span class="keyword">import</span> <span class="string">&quot;Math&quot;</span> <span class="string">&quot;max&quot;</span> (func (;<span class="number">1</span>;) (type <span class="number">0</span>)))</span><br><span class="line">  <span class="comment">// 定义 func 2 并指明其为 type 0</span></span><br><span class="line">  (func (;<span class="number">2</span>;) (type <span class="number">0</span>) (param i32 i32) (result i32)</span><br><span class="line">    <span class="comment">// 声明6个局部变量</span></span><br><span class="line">    (local i32 i32 i32 i32 i32 i32)</span><br><span class="line">    <span class="comment">// 从局部变量中取索引为0的变量值，放到栈顶，此时栈表示为 [var0]，注意局部变量是根据声明顺序分配索引值的，除了手动定义的6个局部变量，2个参数亦为局部变量，分别为0，1，而手动定义的局部变量则是索引2 - 7</span></span><br><span class="line">    local.get <span class="number">0</span></span><br><span class="line">    <span class="comment">// 栈顶出栈，并把值赋给var2，此时栈为[]</span></span><br><span class="line">    local.set <span class="number">2</span></span><br><span class="line">    <span class="comment">// 栈为[var1]</span></span><br><span class="line">    local.get <span class="number">1</span></span><br><span class="line">    <span class="comment">// 表示将i32类型的数值1进栈，所以此时栈为[var1, 1]</span></span><br><span class="line">    i32.const <span class="number">1</span></span><br><span class="line">    <span class="comment">// sub表示substract，即相减，出栈两个值作为操作数，并把结果放到栈顶，此时为[var1 - 1]</span></span><br><span class="line">    i32.sub</span><br><span class="line">    <span class="comment">// tee除了有set的作用，还有把值放回栈顶的效果，所以除了把var1 - 1的值赋值给var4，同时var1 - 1的值依然在栈顶，所以此时依然为[var1 - 1]</span></span><br><span class="line">    local.tee <span class="number">4</span></span><br><span class="line">    <span class="keyword">if</span>  ;; label = @<span class="number">1</span></span><br><span class="line">      loop  ;; label = @<span class="number">2</span></span><br><span class="line">        local.get <span class="number">2</span></span><br><span class="line">        local.set <span class="number">3</span></span><br><span class="line">        i32.const <span class="number">0</span></span><br><span class="line">        local.set <span class="number">6</span></span><br><span class="line">        i32.const <span class="number">10</span></span><br><span class="line">        local.set <span class="number">7</span></span><br><span class="line">        loop  ;; label = @<span class="number">3</span></span><br><span class="line">          local.get <span class="number">3</span></span><br><span class="line">          i32.const <span class="number">10</span></span><br><span class="line">          <span class="comment">// 将var3 % 10 的值放到栈顶</span></span><br><span class="line">          i32.rem_u</span><br><span class="line">          local.set <span class="number">5</span></span><br><span class="line">          local.get <span class="number">3</span></span><br><span class="line">          i32.const <span class="number">10</span></span><br><span class="line">          <span class="comment">// 将var3 / 10向下取整的值放到栈顶</span></span><br><span class="line">          i32.div_u</span><br><span class="line">          local.set <span class="number">3</span></span><br><span class="line">          local.get <span class="number">5</span></span><br><span class="line">          local.get <span class="number">6</span></span><br><span class="line">          <span class="comment">// 取出栈顶头两个数执行 func 1，并把func1 调用的结果放到栈顶</span></span><br><span class="line">          call <span class="number">1</span></span><br><span class="line">          local.set <span class="number">6</span></span><br><span class="line">          local.get <span class="number">5</span></span><br><span class="line">          local.get <span class="number">7</span></span><br><span class="line">          call <span class="number">0</span></span><br><span class="line">          local.set <span class="number">7</span></span><br><span class="line">          local.get <span class="number">3</span></span><br><span class="line">          i32.const <span class="number">0</span></span><br><span class="line">          i32.gt_u</span><br><span class="line">          <span class="comment">// 这里的意思是当栈顶数，var3 &gt; 0的结果为0，（即false）时 跳出当前循环，br_if的 0 表示块的深度，以此类推0表示当前块，1 表示 上一块</span></span><br><span class="line">          br_if <span class="number">0</span> (;@<span class="number">3</span>;)</span><br><span class="line">        end</span><br><span class="line">        local.get <span class="number">2</span></span><br><span class="line">        local.get <span class="number">6</span></span><br><span class="line">        local.get <span class="number">7</span></span><br><span class="line">        i32.mul</span><br><span class="line">        i32.add</span><br><span class="line">        local.set <span class="number">2</span></span><br><span class="line">        local.get <span class="number">4</span></span><br><span class="line">        i32.const <span class="number">1</span></span><br><span class="line">        i32.sub</span><br><span class="line">        local.tee <span class="number">4</span></span><br><span class="line">        <span class="comment">// 如果栈顶数，即var4 - 1 == 0则跳出当前循环</span></span><br><span class="line">        br_if <span class="number">0</span> (;@<span class="number">2</span>;)</span><br><span class="line">      end</span><br><span class="line">    end</span><br><span class="line">    local.get <span class="number">2</span>)</span><br><span class="line">  <span class="comment">// 把func2导出为Run，可以通过module.exports.Run获取</span></span><br><span class="line">  (<span class="keyword">export</span> <span class="string">&quot;Run&quot;</span> (func <span class="number">2</span>)))</span><br></pre></td></tr></table></figure>
+<p>以下为<code>Run</code>函数的<code>JS</code>版本<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">Run</span>(<span class="params">$<span class="number">0</span>, $<span class="number">1</span></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">let</span> $<span class="number">2</span>;</span><br><span class="line">  <span class="keyword">let</span> $<span class="number">3</span>;</span><br><span class="line">  <span class="keyword">let</span> $<span class="number">4</span>;</span><br><span class="line">  <span class="keyword">let</span> $<span class="number">5</span>;</span><br><span class="line">  <span class="keyword">let</span> $<span class="number">6</span>;</span><br><span class="line">  <span class="keyword">let</span> $<span class="number">7</span>;</span><br><span class="line">  <span class="keyword">let</span> delta;</span><br><span class="line"></span><br><span class="line">  $<span class="number">2</span> = $<span class="number">0</span>;</span><br><span class="line">  $<span class="number">4</span> = $<span class="number">1</span> - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      $<span class="number">3</span> = $<span class="number">2</span>;</span><br><span class="line">      $<span class="number">6</span> = <span class="number">0</span>;</span><br><span class="line">      $<span class="number">7</span> = <span class="number">10</span>;</span><br><span class="line">      <span class="keyword">do</span> &#123;</span><br><span class="line">        $<span class="number">5</span> = $<span class="number">3</span> % <span class="number">10</span>;</span><br><span class="line">        $<span class="number">3</span> = <span class="built_in">Math</span>.floor($<span class="number">3</span> / <span class="number">10</span>);</span><br><span class="line">        $<span class="number">6</span> = <span class="built_in">Math</span>.max($<span class="number">5</span>, $<span class="number">6</span>);</span><br><span class="line">        $<span class="number">7</span> = <span class="built_in">Math</span>.min($<span class="number">5</span>, $<span class="number">7</span>);</span><br><span class="line">      &#125; <span class="keyword">while</span> ($<span class="number">3</span> &gt; <span class="number">0</span>);</span><br><span class="line">      $<span class="number">2</span> += $<span class="number">6</span> * $<span class="number">7</span>;</span><br><span class="line">      $<span class="number">4</span> -= <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">while</span> ($<span class="number">4</span> != <span class="number">0</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> $<span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<ol start="3">
+<li><p><code>WebAssembly</code>和<code>JS</code>之间的通信</p>
+<ol>
+<li><code>JS</code>和<code>WebAssembly</code>之间较常见的是互传<code>function</code>和<code>WebAssembly.Memory</code>，通过上面说到的<code>imports</code>（<code>JS</code>传给<code>WebAssembly</code>）和<code>WebAssembly.Instance.exports</code>（<code>WebAssembly</code>传给<code>JS</code>） 。</li>
+<li><p>限制：函数的传参在这里的限制只能是使用上面提到的<code>4种</code>数据类型。那怎么去传递复杂的数据类型呢？方法是通过<code>memory buffer</code>，其可以<code>JS</code>端通过<code>WebAssembly.Memory</code>创建，或者<code>WebAssembly</code>端通过<code>exports</code>导出自己的内存，而这里关键是这个<code>Memory</code>是共享的，两端都可以进行操作。</p>
+<ul>
+<li><p>具体做法，通过<code>wasm-bindgen</code>生成<code>js glue code</code>里的工具方法说明：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用Uint8Array来表示wasm的buffer</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getUint8Memory0</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (cachegetUint8Memory0 === <span class="literal">null</span> || cachegetUint8Memory0.buffer !== wasm.memory.buffer) &#123;</span><br><span class="line">      cachegetUint8Memory0 = <span class="keyword">new</span> <span class="built_in">Uint8Array</span>(wasm.memory.buffer);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> cachegetUint8Memory0;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//设置字符串到`buffer`（可以把对象`stringify`以后作为字符串传入）</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">passStringToWasm0</span>(<span class="params">arg, malloc, realloc</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// ....</span></span><br><span class="line">  <span class="comment">// 通过TextEncoder将字符串编码为UTF-8编码的Uint8Array</span></span><br><span class="line">  <span class="keyword">const</span> buf = cachedTextEncoder.encode(arg);</span><br><span class="line">  <span class="comment">// malloc为rust vm exports的方法，为字符串分配空间，分配空间的逻辑由rust完成</span></span><br><span class="line">  <span class="keyword">const</span> ptr = malloc(buf.length);</span><br><span class="line">  <span class="comment">// 返回ptr是Uint8Array的整数索引。相当于指针，这里把buf的值设置到wasm内存的这个区间里[ptr, ptr + buf.length]</span></span><br><span class="line">  getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);</span><br><span class="line">  WASM_VECTOR_LEN = buf.length;</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">   <span class="comment">// ....</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 如果是Uint8Array就更简单了，直接把数组的值设置到buffer即可</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">passArray8ToWasm0</span>(<span class="params">arg, malloc</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> ptr = malloc(arg.length * <span class="number">1</span>);</span><br><span class="line">  getUint8Memory0().set(arg, ptr / <span class="number">1</span>);</span><br><span class="line">  WASM_VECTOR_LEN = arg.length;</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面两个传递数据的工具函数都有两个关键的值，那就是<code>ptr</code>和<code>WASM_VECTOR_LEN</code>，毫无疑问，这两个值都是整数类型，都可以通过函数进行传递，而实际数据就以<code>Memory</code>为介质，通过这种方法就解决了复杂数据传递的问题了。</p>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h2><p>以上就是通过开发导出Excel需求后，对开发过程和<code>WebAssembly</code>学习的总结，可能<code>WebAssembly</code>在一般的前端开发里，比较少应用场景。但基于知识储备的考虑和兴趣，自然而然地就会去学习这个在<strong>2019年12月</strong>被<code>W3C</code>认定为既<code>html</code>, <code>css</code>, <code>js</code>的第四种开发语言。</p>
+<p>上面记述的内容主要是面向我自己的总结，可能并不那么详尽，不过至少理解了上面的内容以后，我大概明白了<code>WebAssembly</code>的工作机制。</p>
+<p>下面是每周邮件中推荐的文章，同时亦时本文的参考，感兴趣的可以一读</p>
+<ol>
+<li><p><a target="_blank" rel="noopener" href="https://radu-matei.com/blog/practical-guide-to-wasm-memory">practical-guide-to-wasm-memory</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.ttulka.com/learning-webassembly-series">Learning WebAssembly Series</a>         </p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2021/04/05/some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files/" data-id="ckn4nigwp000pjku113326rbn" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/excel/" rel="tag">excel</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/rust/" rel="tag">rust</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/webAssembly/" rel="tag">webAssembly</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-d3-learning-memo" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/10/08/d3-learning-memo/" class="article-date">
+  <time datetime="2020-10-08T14:03:35.678Z" itemprop="datePublished">2020-10-08</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2020/10/08/d3-learning-memo/">D3学习备忘</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在web前端开发中，时常会碰到显示图表的需求。而在这个领域中，国内最有名的库莫过于<code>Echarts</code>了，其他的还有<code>Ant</code>的<code>g2</code>，<code>highchart</code>和<code>chart.js</code>等，这些库的特点是开箱即用，基于配置，根据官方提供的demo，进行一定的调整就能够满足开发的任务的，也有提供自定义的方案，满足特殊的需求。</p>
+<p>不过我总感觉不能满足于这种高级封装库提供的便利，因为这样比较难提升自己的开发能力，所以希望去折腾些较底层的库，让自己可以多动些脑筋。（也有一种潮流是直接使用<code>React</code>这类前端框架，做可视化的工作（同样也是数据驱动视图），不过这样子就相当于再造一个轮子了）</p>
+<p>而<code>d3</code>就是一个很好的选择，历史悠久，使用者众多，作者<code>Mike Bostock</code>也是个很有创造力的开发者，独力写了很多优秀的<code>可视化demo</code>，除了<code>d3</code>还创建了可视化分享平台<code>Observerblehq</code>。</p>
+<p><code>API</code>设计方面采用了类似<code>JQuery</code>的链式调用，代码组织的特点是分成了多个独立的模块，分开仓库进行管理，所以也方便使用者按需引入。<code>d3</code>的类的创建，不使用<code>new</code>的方式，而通过函数返回一个新的对象，对象相关的变量，存储在闭包内。</p>
+<p>我觉得<code>d3</code>主要是一个可视化数据处理工具函数的库，不提供图形渲染引擎，所以可以让使用者全盘掌控显示的内容。</p>
+<h1 id="API概念说明"><a href="#API概念说明" class="headerlink" title="API概念说明"></a>API概念说明</h1><h2 id="d3-selection"><a href="#d3-selection" class="headerlink" title="d3.selection"></a>d3.selection</h2><p><code>d3</code>的DOM操作的风格十分类似<code>Jquery</code></p>
+<ol>
+<li>创建DOM元素并返回一个类似<code>Jquery</code>集合的<code>Selection</code>对象</li>
+</ol>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">d3.create(<span class="string">&#x27;svg&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li><p>选择DOM元素，<code>select</code>和<code>selectAll</code>都会返回一个<code>Selection</code>。</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">selection.select(<span class="string">&#x27;rect&#x27;</span>)</span><br><span class="line">selection.selectAll(<span class="string">&#x27;rect&#x27;</span>)</span><br><span class="line"><span class="comment">// 或者使用d3的静态方法</span></span><br><span class="line">d3.select(<span class="string">&#x27;rect&#x27;</span>)</span><br><span class="line">d3.selectAll(<span class="string">&#x27;rect&#x27;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>绑定数据。绑定数据的方法有<code>data</code>和<code>datum</code>两种，<code>data</code>会返回一个新的集合并逐一把每一行数据绑定给<code>selection</code>中的成员，如原<code>selection</code>中的成员数量比<code>data</code>的行数小，则新创建的<code>selection</code>会使用占位用的<code>empty</code>补足；<code>datum</code>则是将整组数据逐一绑定给每一个<code>selection</code>成员，不会产生新的集合。</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr: <span class="built_in">any</span>[]</span><br><span class="line">selection.data(arr)</span><br><span class="line"><span class="comment">// 设置selection各成员绑定的数据</span></span><br><span class="line">selection.datum(arr)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>绑定数据的行数与<code>selection</code>的数量有出入时，<code>d3</code>会产生<code>enter</code>和<code>exit</code>的集合。但是并不会默认给<code>enter</code>的集合自动创建对应的DOM元素，这时可使用<code>join</code>去创建。</p>
+</li>
+</ol>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr: <span class="built_in">any</span>[]</span><br><span class="line">selection.data(arr).join(<span class="string">&#x27;rect&#x27;</span><span class="comment">/** 元素的标签名 */</span>)</span><br><span class="line"><span class="comment">// 与上面等价</span></span><br><span class="line">selection.data(arr).enter().append(<span class="string">&#x27;rect&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li><code>selection.call</code>接收一个以<code>selection</code>为参数的回调函数，目前看来用途主要给<code>selection</code>添加一些子元素，这样就不会改变外部链式调用的主体。</li>
+</ol>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selection.call(<span class="function">(<span class="params">s</span>) =&gt;</span> s.append(<span class="string">&#x27;path&#x27;</span>))</span><br></pre></td></tr></table></figure>
+<ol start="6">
+<li><code>selection.each</code>方法并不会回传一个子<code>selection</code>，而是回传三个参数<code>d</code>（<strong>子data</strong>）, <code>i</code>（索引），<code>nodesGroup</code>（<code>selection</code>内部的DOM集合），回调函数的<code>this</code>等同于<code>nodesGroup[i]</code><figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">selection.each(<span class="function"><span class="keyword">function</span> (<span class="params">d, i, nodesGroup</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// 由于并不是子selection，所以需要进行select把DOM变成d3的selection对象</span></span><br><span class="line">  d3.select(<span class="built_in">this</span>)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="d3-Shape"><a href="#d3-Shape" class="headerlink" title="d3.Shape"></a>d3.Shape</h2><ol>
+<li><code>d3.lineRadial</code>与<code>d3.line</code>作用同样都是生成线段，不同的是<code>lineRadial</code>的坐标系是<strong>极坐标系</strong>，而且需要注意的是<strong>0 rad</strong>是<strong>12点方向，角度增长为顺时针</strong>，每个点由<code>angle</code>和<code>radius</code>方法定义。</li>
+</ol>
+<h2 id="d3-polygon"><a href="#d3-polygon" class="headerlink" title="d3.polygon"></a>d3.polygon</h2><ol>
+<li><code>d3.polygonCentroid</code>，求多边形的中点a。</li>
+</ol>
+<p>原理是以<code>[P_(n - 1), P_n, [0, 0]]</code>为顶点组成三角形，求出各个三角形的中点<code>P_m_n</code>（顶点坐标和除以3）。</p>
+<p>然后各个顶点根据权重<code>W（三角形n的面积 / 所有三角形的面积和）</code>相加求得。</p>
+<p><code>三角形的面积 = (V_(n - 1) X（叉积） V_n) * 0.5</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/10/08/d3-learning-memo/" data-id="ckn4nigw40008jku146xw0q6l" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/chart/" rel="tag">chart</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/d3/" rel="tag">d3</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/svg/" rel="tag">svg</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-memo-for-KMP-algorithm" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/study-memo/2020/08/30/memo-for-KMP-algorithm/" class="article-date">
@@ -85,17 +277,16 @@
     <div class="article-entry" itemprop="articleBody">
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近一个月，坚持每天上Leetcode做一道算法题。这周每天推送的算法题，大部份都跟字符串有关且有两天的较困难的题目都用到了KMP算法，KMP算法步骤不算复杂，但也需要我花了点时间去理解，下面对我的理解进行记述。</p>
-<h2 id="主文"><a href="#主文" class="headerlink" title="主文"></a>主文</h2><p>结合代码讲解：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">"babbbabbaba"</span>;</span><br><span class="line">Integer len = s.length();</span><br><span class="line">Integer fail[] = <span class="keyword">new</span> Integer[len];</span><br><span class="line">Arrays.fill(fail, -<span class="number">1</span>);</span><br><span class="line">Integer j = -<span class="number">1</span>;</span><br><span class="line"><span class="keyword">for</span> (Integer i = <span class="number">1</span>;i &lt; len;i++) &#123;</span><br><span class="line">    j = fail[i - <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">while</span> (j != -<span class="number">1</span> &amp;&amp; s.charAt(j + <span class="number">1</span>) != s.charAt(i)) &#123;</span><br><span class="line">        j = fail[j];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (s.charAt(j + <span class="number">1</span>) == s.charAt(i)) &#123;</span><br><span class="line">        fail[i] = j + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>对于字符串<code>s</code>，KMP的核心任务是先构建一个<code>fail</code>数组，<code>fail</code>数组成员<code>fail[i]</code>的值<code>k</code>表示<code>s[0:k - 1] == s[i + 1 - k:i + 1]</code>(以<code>i</code>为末位的长度为<code>k</code>的子字符串等于<code>s</code>的<code>k</code>长前缀)。</p>
+<h2 id="主文"><a href="#主文" class="headerlink" title="主文"></a>主文</h2><p>结合代码讲解：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">String s = <span class="string">&quot;babbbabbaba&quot;</span>;</span><br><span class="line">Integer len = s.length();</span><br><span class="line">Integer fail[] = <span class="keyword">new</span> Integer[len];</span><br><span class="line">Arrays.fill(fail, -<span class="number">1</span>);</span><br><span class="line">Integer j = -<span class="number">1</span>;</span><br><span class="line"><span class="keyword">for</span> (Integer i = <span class="number">1</span>;i &lt; len;i++) &#123;</span><br><span class="line">    j = fail[i - <span class="number">1</span>];</span><br><span class="line">    <span class="keyword">while</span> (j != -<span class="number">1</span> &amp;&amp; s.charAt(j + <span class="number">1</span>) != s.charAt(i)) &#123;</span><br><span class="line">        j = fail[j];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (s.charAt(j + <span class="number">1</span>) == s.charAt(i)) &#123;</span><br><span class="line">        fail[i] = j + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>对于字符串<code>s</code>，KMP的核心任务是先构建一个<code>fail</code>数组，<code>fail</code>数组成员<code>fail[i]</code>的值<code>k</code>表示<code>s[0:k - 1] == s[i + 1 - k:i + 1]</code>(以<code>i</code>为末位的长度为<code>k</code>的子字符串等于<code>s</code>的<code>k</code>长前缀)。</p>
 <p>上面<code>12~13</code>行比较好理解，由于上一次比较的结果是<code>j  = fail[i - 1]</code>，那假如这次比较也相等，自然<code>fail[i] = fail[i - 1] + 1 = j + 1</code></p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/08/30/memo-for-KMP-algorithm/" data-id="ckeh8k4d50000ggu125osjoyv" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/08/30/memo-for-KMP-algorithm/" data-id="ckn4nigwc000gjku1brs2b7ik" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/KMP/">KMP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/KMP/" rel="tag">KMP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/algorithm/" rel="tag">algorithm</a></li></ul>
 
     </footer>
   </div>
@@ -133,8 +324,7 @@
 <h3 id="误区"><a href="#误区" class="headerlink" title="误区"></a>误区</h3><ol>
 <li><code>location指令</code>是类似<code>express（node.js）</code>的中间件， 请求会在各个匹配的location中进行传递。</li>
 </ol>
-<p>产生这个误解是因为看到这个配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里只看到添加Expires的响应头，没看到返回响应主体的指令</span></span><br><span class="line">location ~ .*\.(js|css|mp4)?$ &#123;</span><br><span class="line">  expires 1h;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 因为上面指令的存在，导致后面的这个指令一直未能匹配到</span></span><br><span class="line">location ~ ^/resource/(.*) &#123;</span><br><span class="line">  <span class="keyword">if</span> (!-f <span class="variable">$request_filename</span>) &#123;</span><br><span class="line">    rewrite ^/(.*?)/(.*?)/(.*?)/(.*)$ /code/mapi/<span class="variable">$2</span>/<span class="variable">$3</span>/<span class="variable">$1</span>/<span class="variable">$4</span> last;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p><strong>正解</strong>：对于每个请求，所有的处理都只会在一个location指令内完成所有的处理，上面第一条指令没有显式设置返回主体是因为默认是返回请求路径的静态文件。这一点类似<code>webpack</code>的<code>output</code>设置<code>public path</code>和<code>path</code>，默认是一个静态资源的转发服务器。</p>
+<p>产生这个误解是因为看到这个配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里只看到添加Expires的响应头，没看到返回响应主体的指令</span></span><br><span class="line">location ~ .*\.(js|css|mp4)?$ &#123;</span><br><span class="line">  expires 1h;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 因为上面指令的存在，导致后面的这个指令一直未能匹配到</span></span><br><span class="line">location ~ ^/resource/(.*) &#123;</span><br><span class="line">  <span class="keyword">if</span> (!-f <span class="variable">$request_filename</span>) &#123;</span><br><span class="line">    rewrite ^/(.*?)/(.*?)/(.*?)/(.*)$ /code/mapi/<span class="variable">$2</span>/<span class="variable">$3</span>/<span class="variable">$1</span>/<span class="variable">$4</span> last;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><strong>正解</strong>：对于每个请求，所有的处理都只会在一个location指令内完成所有的处理，上面第一条指令没有显式设置返回主体是因为默认是返回请求路径的静态文件。这一点类似<code>webpack</code>的<code>output</code>设置<code>public path</code>和<code>path</code>，默认是一个静态资源的转发服务器。</p>
 <ol>
 <li><code>location指令</code>匹配的优先顺序，主要是看规则的匹配字符串的长度。不管规则是不是正则表达式，都会当成正则表达式处理（类似<code>javascript</code>的<code>String.prototype.replace</code>的第一个参数可以是字符串）。</li>
 </ol>
@@ -159,10 +349,78 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/" data-id="ckdwr8ent0000dsu1o438pfh1" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/" data-id="ckn4nigwe000ijku141dc6lc2" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/location指令/">location指令</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/nginx/">nginx</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/location%E6%8C%87%E4%BB%A4/" rel="tag">location指令</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/nginx/" rel="tag">nginx</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-experience-of-using-git-submodule" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/07/05/experience-of-using-git-submodule/" class="article-date">
+  <time datetime="2020-07-05T15:43:54.471Z" itemprop="datePublished">2020-07-05</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/study-memo/2020/07/05/experience-of-using-git-submodule/">git submodule的使用经验</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>上两周开始，我开始在实际项目中使用之前同事提到过的<code>git submodule</code>的代码管理方式。</p>
+<p>最开始我引入这个命令的原因是前端的各Vue项目之间，目录结构和代码内容相似，甚至于有时候新开一个项目会直接复制旧项目的代码。一言而蔽之，那就是项目之间有着可共用的代码模块。</p>
+<p>假如把其中的一些子目录抽出来作为一个独立仓库，主项目只进行引用，就可以避免这些可共用的代码不可靠地进行人工复制，代码分散管理更新的问题。</p>
+<h3 id="常用命令解释及易误解的地方"><a href="#常用命令解释及易误解的地方" class="headerlink" title="常用命令解释及易误解的地方"></a>常用命令解释及易误解的地方</h3><p>以下<strong>常用命令</strong>部分基本来自于<a target="_blank" rel="noopener" href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">官方指南</a></p>
+<p>克隆远程仓库作子模块<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git submodule add &lt;remote-repo-url&gt; [local-path=.]</span><br></pre></td></tr></table></figure><br>显示子模块的diff信息<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git diff --cached --submodule</span><br></pre></td></tr></table></figure><br>克隆（<code>git clone</code>）带有子模块的项目后，需要初始化并拉取子模块<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">git submodule init</span><br><span class="line">git submodule update</span><br><span class="line"><span class="meta">#</span><span class="bash"> 上面两命令的组合，一般直接用组合命令</span></span><br><span class="line">git submodule update --init</span><br><span class="line"><span class="meta">#</span><span class="bash"> 又或者加上 --recursive 拉取嵌套的子模块（子模块本身又有子模块）</span></span><br><span class="line">git submodule update --init --recursive</span><br><span class="line"><span class="meta">#</span><span class="bash"> 或者在<span class="built_in">clone</span>时加上 --recurse-submodules选项自动完成拉取</span></span><br><span class="line">git clone --recurse-submodules &lt;main-project-repo-url&gt;</span><br></pre></td></tr></table></figure><br>当需要更新子模块时，切换到子模块的目录，使用常规的拉取上游更新的命令<code>git fetch</code>和<code>git merge</code>（或直接<code>git pull</code>）<br>或直接使用<code>git submodule update --remote [submodule-path]</code>就不用切目录进行手动更新。</p>
+<p>上面快捷命令默认拉取的是master分支，如果想默认拉取其他分支，则进行如下配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -f &lt;git-modules-config-path&gt; 表示指定.gitmodules文件路径</span></span><br><span class="line">git config -f .gitmodules submodule.&lt;submodule-name&gt;.branch &lt;branch-name&gt;</span><br></pre></td></tr></table></figure><br>进行下面的配置，可以让git status显示子模块的status<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config status.submodulesummary 1</span><br></pre></td></tr></table></figure></p>
+<p>当不想每次diff更新时都要添加submodule选项，可以进行如下配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global diff.submodule <span class="built_in">log</span></span><br></pre></td></tr></table></figure><br>类似于<code>git clone</code>，<code>git pull</code>如果要同时拉取子模块，也需要添加相关的选项<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git pull --recurse-submodules</span><br><span class="line"><span class="comment"># 或者分开进行</span></span><br><span class="line">git pull</span><br><span class="line">git submodule update --init --recursive</span><br></pre></td></tr></table></figure><br>使用merge选项可以合并远程更新，如果不添加<code>--merge</code>，默认使用<code>--checkout</code>，直接检出commit。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># --remote 选项的作用是假如子模块有追踪远程的分支，那将会拉取该上游分支进行同步，否则会检出主模块当前commit对应的子模块的commit</span></span><br><span class="line"> git submodule update --remote --merge</span><br></pre></td></tr></table></figure><br>如果发生冲突，可以跟普通仓库一样，到对应的子模块目录处理冲突，然后提交。由于子模块有新的提交（commit），回到主模块目录输入<code>git status</code>也会提示需要<code>git add</code>子模块的目录。</p>
+<p>当在主仓库推送更新时可以使用<code>recurse-submodules</code>选项，避免没有推送子模块更新的情况。<strong>假如子模块更新没有推送到子模块的远程仓库，那么当其他成员，拉取主仓库时将会报错，提示不能从远程拉取对应的子模块的版本。</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这个只会提示你有子模块还没推送</span></span><br><span class="line">git push --recurse-submodules=check</span><br><span class="line"><span class="comment"># or</span></span><br><span class="line">git push --recurse-submodules=on-demand</span><br></pre></td></tr></table></figure></p>
+<h4 id="在实践中出现的疑问"><a href="#在实践中出现的疑问" class="headerlink" title="在实践中出现的疑问"></a>在实践中出现的疑问</h4><p>Q1： <code>git submodule</code>跟直接<code>clone</code>子模块到子目录的区别在哪里。</p>
+<p>A1：直接<code>clone</code>不能与主模块产生关联，而<code>git submodule</code>会在工程目录下添加<code>.gitsubmoules</code>文件，声明所有的子模块所在的目录及它们的远程仓库地址等相关信息。第二点，其实是理解<code>submodule</code>机制的关键，子模块不论因什么原因（未staged的change、untracked的文件、checkout到其他版本等）产生内容变化，在主模块目录输入<code>git status</code>都会显示子模块目录有更改。主模块在判断子模块是否有更改是与<strong>主模块当前版本对应的子模块版本</strong>进行比较。</p>
+<p>主模块在<code>git add</code>文件时是不会添加子模块目录下的内容，而是直接<code>add</code>子模块目录。子模块目录以主模块的角度来看，是一个记录版本号的<code>.txt</code>文件，记录的版本号与子模块当前版本同步。</p>
+<p>这一点可以在主模块拉取远程更新，子模块目录发生冲突的时候可以体现。显示的冲突会显示成类似下面的形式，下面的英文字符是commit的SHA:<br><figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;&lt;&lt; a/src/components (Current Change)</span><br><span class="line"><span class="comment">+++ abcdefghijklmnopqrst</span></span><br><span class="line">&gt;&gt;&gt; b/src/components (Incoming Change)</span><br><span class="line"><span class="comment">+++ ghijklmnopqrstuvwxyz</span></span><br></pre></td></tr></table></figure></p>
+<p>Q2：怎么把分支B的子目录变成子模块，假设分支A的该子目录已经是子模块了。</p>
+<p>A2：切到分支B，然后checkout 分支A的<code>.gitmodules</code>文件（注意这里如果直接初始化(<code>git submodule update --init</code>)子模块是无效的，道理可参见上一个问题的解释，因为此时子模块没有指定一个版本）。切到分支B后，有两种方式完成这个任务：</p>
+<ol>
+<li>删除子目录的内容，通过 <code>git submodule add</code> 克隆远程仓库到指定子目录</li>
+<li><code>checkout</code>分支A的<code>.gitmodules</code>文件（注意这里如果直接初始化(<code>git submodule update --init</code>)子模块是无效的，道理可参见上一个问题的解释，因为此时子模块所在目录没有任何记录为子模块的历史，没有版本绑定）。然后checkout 分支A的对应子目录即可。</li>
+</ol>
+<h3 id="小提示"><a href="#小提示" class="headerlink" title="小提示"></a>小提示</h3><ul>
+<li><p>submodule下有一个<code>foreach</code>的子命令挺实用的，它的机制类似于<code>cd</code>到每个子模块目录，然后执行一段shell脚本。</p>
+<ul>
+<li>example：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 显示各个子模块的status</span></span><br><span class="line">git submodule foreach <span class="string">&#x27;git status&#x27;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li>官方指南上记载了三个<code>git alias</code>的配置，可以使用缩写执行一些常用命令。<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ! 表示命令可以是普通的shell命令而不用是git 的子命令</span></span><br><span class="line"><span class="comment"># 在windows中需要把&#x27;!&#x27;&quot;git diff ...&quot; 改成 &quot;! git diff ...&quot;</span></span><br><span class="line">git config alias.sdiff <span class="string">&#x27;!&#x27;</span><span class="string">&quot;git diff &amp;&amp; git submodule foreach &#x27;git diff&#x27;&quot;</span></span><br><span class="line">git config alias.spush <span class="string">&#x27;push --recurse-submodules=on-demand&#x27;</span></span><br><span class="line">git config alias.supdate <span class="string">&#x27;submodule update --remote --merge&#x27;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="附记"><a href="#附记" class="headerlink" title="附记"></a>附记</h3><p>最开始公司里提出用<code>submodule</code>并不是为了共用代码，而是为了在前后端代码并存的项目中，对前后端代码分别使用子模块管理，进行分隔，互不干涉。</p>
+<p>对于共用代码的方案，git还有一个好像在某些版本不是内置的命令<code>subtree</code>，稍微了解了一下，好像<code>subtree</code>会把子模块的内的文件更改也记录到主模块中。个人觉得<code>submodule</code>的对于各模块的分割功能更好，而且是<code>git</code>内置的，算是标准功能吧。</p>
+<p>虽然<code>submodule</code>的使用需要一点额外的学习成本，但只要了解了它的机制，用起来也能得心应手的。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/07/05/experience-of-using-git-submodule/" data-id="ckn4nigw7000ajku18u830859" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/git/" rel="tag">git</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/submodule/" rel="tag">submodule</a></li></ul>
 
     </footer>
   </div>
@@ -195,7 +453,7 @@
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这星期发现开发的某个页面的复选框的点击反馈比较的慢，为了给用户提供更好交互体验的信念，同时也为了验证积累的Vue框架的知识，决定改善这个部分的代码写法。而这个页面最开始是其他同事开发的，可能团队中一直都没有意识到这个问题，所以趁此机会分享这次调优的过程。</p>
 <h2 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h2><p>原案例我把它稍简化以后放到codepen进行展示。</p>
-<p></p><p class="codepen" data-height="265" data-theme-id="light" data-default-tab="js,result" data-user="sociosarbis" data-slug-hash="ExVyppE" style="height: 265px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid; margin: 1em 0; padding: 1em;" data-pen-title="speed up the interaction of a view with many checkboxes"><br>  <span>See the Pen <a href="https://codepen.io/sociosarbis/pen/ExVyppE" target="_blank" rel="noopener"><br>  speed up the interaction of a view with many checkboxes</a> by Sociosarbis (<a href="https://codepen.io/sociosarbis" target="_blank" rel="noopener">@sociosarbis</a>)<br>  on <a href="https://codepen.io" target="_blank" rel="noopener">CodePen</a>.</span><br></p><p></p>
+<p><p class="codepen" data-height="265" data-theme-id="light" data-default-tab="js,result" data-user="sociosarbis" data-slug-hash="ExVyppE" style="height: 265px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px solid; margin: 1em 0; padding: 1em;" data-pen-title="speed up the interaction of a view with many checkboxes"><br>  <span>See the Pen <a target="_blank" rel="noopener" href="https://codepen.io/sociosarbis/pen/ExVyppE"><br>  speed up the interaction of a view with many checkboxes</a> by Sociosarbis (<a target="_blank" rel="noopener" href="https://codepen.io/sociosarbis">@sociosarbis</a>)<br>  on <a target="_blank" rel="noopener" href="https://codepen.io">CodePen</a>.</span><br></p></p>
 <script async src="https://static.codepen.io/assets/embed/ei.js"></script>
 
 <p><strong>经过一些实验以后，有以下的发现</strong></p>
@@ -214,14 +472,13 @@
 <li>假如render函数中出现的自定义组件的props不发生改变，是不会去执行自定义组件的render函数，意思是不会diff更深一层，这样就能减少diff的次数。</li>
 </ol>
 <p>示例：</p>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Vue.extend(&#123;</span><br><span class="line">  template: <span class="string">`&lt;el-tabs v-model="activeTab"&gt;</span></span><br><span class="line"><span class="string">  &lt;el-tab-pane class="tab__pane" v-for="tab in tabs" :key="tab.name" :name="tab.name" :label="tab.name + '(' + tabCount(tab) +')'"&gt;</span></span><br><span class="line"><span class="string">    `</span> + <span class="comment">/*&lt;div v-for="group in tab.groups" :key="group.name"&gt;</span></span><br><span class="line"><span class="comment">    &lt;div&gt;&lt;el-checkbox :value="group.selectedMembers.length === group.members.length" @input="group.selectedMembers = $event ? group.members : []" @click.native="startInteraction"/&gt;&#123;&#123;group.name + '(' + group.selectedMembers.length + ')'&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="comment">      &lt;el-checkbox-group v-model="group.selectedMembers" @click.native="startInteraction"&gt;</span></span><br><span class="line"><span class="comment">        &lt;el-checkbox v-for="(member, index) in group.members" :label="member" :key="index" /&gt;</span></span><br><span class="line"><span class="comment">      &lt;/el-checkbox-group&gt;</span></span><br><span class="line"><span class="comment">    &lt;/div&gt; */</span> + <span class="string">`</span></span><br><span class="line"><span class="string">  &lt;/el-tab-pane&gt;</span></span><br><span class="line"><span class="string">&lt;/el-tabs&gt;`</span>,</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-<p>把注释掉的部分抽出改成<code>select-group</code>组件<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Vue.component(<span class="string">"select-group"</span>, &#123;</span><br><span class="line">  template: <span class="string">`&lt;div&gt;&lt;div&gt;&lt;el-checkbox :value="group.selectedMembers.length === group.members.length" @input="group.selectedMembers = $event ? group.members : []" @click.native="$emit('click')"/&gt;&#123;&#123;group.name + '(' + group.selectedMembers.length + ')'&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="string">      &lt;el-checkbox-group v-model="group.selectedMembers" @click.native="$emit('click')"&gt;</span></span><br><span class="line"><span class="string">        &lt;el-checkbox v-for="(member, index) in group.members" :label="member" :key="index" /&gt;</span></span><br><span class="line"><span class="string">      &lt;/el-checkbox-group&gt;&lt;/div&gt;`</span>,</span><br><span class="line">  props: &#123;</span><br><span class="line">    group: <span class="built_in">Object</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Vue.extend(&#123;</span><br><span class="line">  template: <span class="string">`&lt;el-tabs v-model=&quot;activeTab&quot;&gt;</span></span><br><span class="line"><span class="string">  &lt;el-tab-pane class=&quot;tab__pane&quot; v-for=&quot;tab in tabs&quot; :key=&quot;tab.name&quot; :name=&quot;tab.name&quot; :label=&quot;tab.name + &#x27;(&#x27; + tabCount(tab) +&#x27;)&#x27;&quot;&gt;</span></span><br><span class="line"><span class="string">    `</span> + <span class="comment">/*&lt;div v-for=&quot;group in tab.groups&quot; :key=&quot;group.name&quot;&gt;</span></span><br><span class="line"><span class="comment">    &lt;div&gt;&lt;el-checkbox :value=&quot;group.selectedMembers.length === group.members.length&quot; @input=&quot;group.selectedMembers = $event ? group.members : []&quot; @click.native=&quot;startInteraction&quot;/&gt;&#123;&#123;group.name + &#x27;(&#x27; + group.selectedMembers.length + &#x27;)&#x27;&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="comment">      &lt;el-checkbox-group v-model=&quot;group.selectedMembers&quot; @click.native=&quot;startInteraction&quot;&gt;</span></span><br><span class="line"><span class="comment">        &lt;el-checkbox v-for=&quot;(member, index) in group.members&quot; :label=&quot;member&quot; :key=&quot;index&quot; /&gt;</span></span><br><span class="line"><span class="comment">      &lt;/el-checkbox-group&gt;</span></span><br><span class="line"><span class="comment">    &lt;/div&gt; */</span> + <span class="string">`</span></span><br><span class="line"><span class="string">  &lt;/el-tab-pane&gt;</span></span><br><span class="line"><span class="string">&lt;/el-tabs&gt;`</span>,</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>把注释掉的部分抽出改成<code>select-group</code>组件<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Vue.component(<span class="string">&quot;select-group&quot;</span>, &#123;</span><br><span class="line">  template: <span class="string">`&lt;div&gt;&lt;div&gt;&lt;el-checkbox :value=&quot;group.selectedMembers.length === group.members.length&quot; @input=&quot;group.selectedMembers = $event ? group.members : []&quot; @click.native=&quot;$emit(&#x27;click&#x27;)&quot;/&gt;&#123;&#123;group.name + &#x27;(&#x27; + group.selectedMembers.length + &#x27;)&#x27;&#125;&#125;&lt;/div&gt;</span></span><br><span class="line"><span class="string">      &lt;el-checkbox-group v-model=&quot;group.selectedMembers&quot; @click.native=&quot;$emit(&#x27;click&#x27;)&quot;&gt;</span></span><br><span class="line"><span class="string">        &lt;el-checkbox v-for=&quot;(member, index) in group.members&quot; :label=&quot;member&quot; :key=&quot;index&quot; /&gt;</span></span><br><span class="line"><span class="string">      &lt;/el-checkbox-group&gt;&lt;/div&gt;`</span>,</span><br><span class="line">  props: &#123;</span><br><span class="line">    group: <span class="built_in">Object</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
 <ol start="2">
 <li>取消复选框的过渡动画</li>
 </ol>
 <ul>
-<li>取消动画的原因是在全选/取消全选的时候，大量的复选框（大量的DOM对象）会影响渲染速度，过渡动画会变慢，取消以后，视觉上的反馈速度会快许多。<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-checked</span> <span class="selector-class">.el-checkbox__inner</span>, <span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-indeterminate</span> <span class="selector-class">.el-checkbox__inner</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-class">.el-checkbox__inner</span><span class="selector-pseudo">::after</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
+<li>取消动画的原因是在全选/取消全选的时候，大量的复选框（大量的DOM对象）会影响渲染速度，过渡动画会变慢，取消以后，视觉上的反馈速度会快许多。<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-checked</span> <span class="selector-class">.el-checkbox__inner</span>, <span class="selector-class">.el-checkbox__input</span><span class="selector-class">.is-indeterminate</span> <span class="selector-class">.el-checkbox__inner</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="selector-class">.el-checkbox__inner</span><span class="selector-pseudo">::after</span> &#123;</span><br><span class="line">  <span class="attribute">transition</span>: none <span class="meta">!important</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
 </ul>
 <ol start="3">
 <li>对tab使用v-if和keep-alive</li>
@@ -241,87 +498,10 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" data-id="ck977iv810000d8u1e49j8835" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/" data-id="ckn4nigwg000kjku14muj4ymk" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/performance/">performance</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-experience-of-using-git-submodule" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2020/03/18/experience-of-using-git-submodule/" class="article-date">
-  <time datetime="2020-03-18T01:18:32.233Z" itemprop="datePublished">2020-03-18</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2020/03/18/experience-of-using-git-submodule/">git submodule的使用经验</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>上两周开始，我开始在实际项目中使用之前同事提到过的<code>git submodule</code>的代码管理方式。</p>
-<p>最开始我引入这个命令的原因是前端的各Vue项目之间，目录结构和代码内容相似，甚至于有时候新开一个项目会直接复制旧项目的代码。一言而蔽之，那就是项目之间有着可共用的代码模块。</p>
-<p>假如把其中的一些子目录抽出来作为一个独立仓库，主项目只进行引用，就可以避免这些可共用的代码不可靠地进行人工复制，代码分散管理更新的问题。</p>
-<h3 id="常用命令解释及易误解的地方"><a href="#常用命令解释及易误解的地方" class="headerlink" title="常用命令解释及易误解的地方"></a>常用命令解释及易误解的地方</h3><p>以下<strong>常用命令</strong>部分基本来自于<a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules" target="_blank" rel="noopener">官方指南</a></p>
-<p>克隆远程仓库作子模块<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git submodule add &lt;remote-repo-url&gt; [local-path=.]</span><br></pre></td></tr></table></figure></p>
-<p>显示子模块的diff信息<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git diff --cached --submodule</span><br></pre></td></tr></table></figure></p>
-<p>克隆（<code>git clone</code>）带有子模块的项目后，需要初始化并拉取子模块<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">git submodule init</span><br><span class="line">git submodule update</span><br><span class="line"><span class="meta">#</span> 上面两命令的组合，一般直接用组合命令</span><br><span class="line">git submodule update --init</span><br><span class="line"><span class="meta">#</span> 又或者加上 --recursive 拉取嵌套的子模块（子模块本身又有子模块）</span><br><span class="line">git submodule update --init --recursive</span><br><span class="line"><span class="meta">#</span> 或者在clone时加上 --recurse-submodules选项自动完成拉取</span><br><span class="line">git clone --recurse-submodules &lt;main-project-repo-url&gt;</span><br></pre></td></tr></table></figure></p>
-<p>当需要更新子模块时，切换到子模块的目录，使用常规的拉取上游更新的命令<code>git fetch</code>和<code>git merge</code>（或直接<code>git pull</code>）<br>或直接使用<code>git submodule update --remote [submodule-path]</code>就不用切目录进行手动更新。</p>
-<p>上面快捷命令默认拉取的是master分支，如果想默认拉取其他分支，则进行如下配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -f &lt;git-modules-config-path&gt; 表示指定.gitmodules文件路径</span></span><br><span class="line">git config -f .gitmodules submodule.&lt;submodule-name&gt;.branch &lt;branch-name&gt;</span><br></pre></td></tr></table></figure></p>
-<p>进行下面的配置，可以让git status显示子模块的status<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config status.submodulesummary 1</span><br></pre></td></tr></table></figure></p>
-<p>当不想每次diff更新时都要添加submodule选项，可以进行如下配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global diff.submodule <span class="built_in">log</span></span><br></pre></td></tr></table></figure></p>
-<p>类似于<code>git clone</code>，<code>git pull</code>如果要同时拉取子模块，也需要添加相关的选项<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git pull --recurse-submodules</span><br><span class="line"><span class="comment"># 或者分开进行</span></span><br><span class="line">git pull</span><br><span class="line">git submodule update --init --recursive</span><br></pre></td></tr></table></figure></p>
-<p>使用merge选项可以合并远程更新，如果不添加<code>--merge</code>，默认使用<code>--checkout</code>，直接检出commit。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># --remote 选项的作用是假如子模块有追踪远程的分支，那将会拉取该上游分支进行同步，否则会检出主模块当前commit对应的子模块的commit</span></span><br><span class="line"> git submodule update --remote --merge</span><br></pre></td></tr></table></figure></p>
-<p>如果发生冲突，可以跟普通仓库一样，到对应的子模块目录处理冲突，然后提交。由于子模块有新的提交（commit），回到主模块目录输入<code>git status</code>也会提示需要<code>git add</code>子模块的目录。</p>
-<p>当在主仓库推送更新时可以使用<code>recurse-submodules</code>选项，避免没有推送子模块更新的情况。<strong>假如子模块更新没有推送到子模块的远程仓库，那么当其他成员，拉取主仓库时将会报错，提示不能从远程拉取对应的子模块的版本。</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这个只会提示你有子模块还没推送</span></span><br><span class="line">git push --recurse-submodules=check</span><br><span class="line"><span class="comment"># or</span></span><br><span class="line">git push --recurse-submodules=on-demand</span><br></pre></td></tr></table></figure></p>
-<h4 id="在实践中出现的疑问"><a href="#在实践中出现的疑问" class="headerlink" title="在实践中出现的疑问"></a>在实践中出现的疑问</h4><p>Q1： <code>git submodule</code>跟直接<code>clone</code>子模块到子目录的区别在哪里。</p>
-<p>A1：直接<code>clone</code>不能与主模块产生关联，而<code>git submodule</code>会在工程目录下添加<code>.gitsubmoules</code>文件，声明所有的子模块所在的目录及它们的远程仓库地址等相关信息。第二点，其实是理解<code>submodule</code>机制的关键，子模块不论因什么原因（未staged的change、untracked的文件、checkout到其他版本等）产生内容变化，在主模块目录输入<code>git status</code>都会显示子模块目录有更改。主模块在判断子模块是否有更改是与<strong>主模块当前版本对应的子模块版本</strong>进行比较。</p>
-<p>主模块在<code>git add</code>文件时是不会添加子模块目录下的内容，而是直接<code>add</code>子模块目录。子模块目录以主模块的角度来看，是一个记录版本号的<code>.txt</code>文件，记录的版本号与子模块当前版本同步。</p>
-<p>这一点可以在主模块拉取远程更新，子模块目录发生冲突的时候可以体现。显示的冲突会显示成类似下面的形式，下面的英文字符是commit的SHA:<br><figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;&lt;&lt; a/src/components (Current Change)</span><br><span class="line"><span class="comment">+++ abcdefghijklmnopqrst</span></span><br><span class="line">&gt;&gt;&gt; b/src/components (Incoming Change)</span><br><span class="line"><span class="comment">+++ ghijklmnopqrstuvwxyz</span></span><br></pre></td></tr></table></figure></p>
-<p>Q2：怎么把分支B的子目录变成子模块，假设分支A的该子目录已经是子模块了。</p>
-<p>A2：切到分支B，然后checkout 分支A的<code>.gitmodules</code>文件（注意这里如果直接初始化(<code>git submodule update --init</code>)子模块是无效的，道理可参见上一个问题的解释，因为此时子模块没有指定一个版本）。切到分支B后，有两种方式完成这个任务：</p>
-<ol>
-<li>删除子目录的内容，通过 <code>git submodule add</code> 克隆远程仓库到指定子目录</li>
-<li><code>checkout</code>分支A的<code>.gitmodules</code>文件（注意这里如果直接初始化(<code>git submodule update --init</code>)子模块是无效的，道理可参见上一个问题的解释，因为此时子模块所在目录没有任何记录为子模块的历史，没有版本绑定）。然后checkout 分支A的对应子目录即可。</li>
-</ol>
-<h3 id="小提示"><a href="#小提示" class="headerlink" title="小提示"></a>小提示</h3><ul>
-<li><p>submodule下有一个<code>foreach</code>的子命令挺实用的，它的机制类似于<code>cd</code>到每个子模块目录，然后执行一段shell脚本。</p>
-<ul>
-<li>example：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 显示各个子模块的status</span></span><br><span class="line">git submodule foreach <span class="string">'git status'</span></span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-</li>
-<li><p>官方指南上记载了三个<code>git alias</code>的配置，可以使用缩写执行一些常用命令。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ! 表示命令可以是普通的shell命令而不用是git 的子命令</span></span><br><span class="line"><span class="comment"># 在windows中需要把'!'"git diff ..." 改成 "! git diff ..."</span></span><br><span class="line">git config alias.sdiff <span class="string">'!'</span><span class="string">"git diff &amp;&amp; git submodule foreach 'git diff'"</span></span><br><span class="line">git config alias.spush <span class="string">'push --recurse-submodules=on-demand'</span></span><br><span class="line">git config alias.supdate <span class="string">'submodule update --remote --merge'</span></span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h3 id="附记"><a href="#附记" class="headerlink" title="附记"></a>附记</h3><p>最开始公司里提出用<code>submodule</code>并不是为了共用代码，而是为了在前后端代码并存的项目中，对前后端代码分别使用子模块管理，进行分隔，互不干涉。</p>
-<p>对于共用代码的方案，git还有一个好像在某些版本不是内置的命令<code>subtree</code>，稍微了解了一下，好像<code>subtree</code>会把子模块的内的文件更改也记录到主模块中。个人觉得<code>submodule</code>的对于各模块的分割功能更好，而且是<code>git</code>内置的，算是标准功能吧。</p>
-<p>虽然<code>submodule</code>的使用需要一点额外的学习成本，但只要了解了它的机制，用起来也能得心应手的。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/03/18/experience-of-using-git-submodule/" data-id="ckbxv4jl70000e0u1w9pnlpcx" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/submodule/">submodule</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Vue/" rel="tag">Vue</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/performance/" rel="tag">performance</a></li></ul>
 
     </footer>
   </div>
@@ -402,9 +582,9 @@
 <li><strong>当下一个接的值是可能的任意值时（如对象的属性值，数组的成员，函数参数）</strong>，都会调用<code>scanTernary</code>,所以在启动编译时，第一步就是执行这个方法。可能的解释是<strong>三元表达式</strong>是包含内联代码所有可能的<strong>表达式</strong>，所以先假定是<strong>三元表达式</strong>，如果不符合条件再fallback到其余情况。</li>
 </ol>
 <h5 id="比较有启发性的解析方法："><a href="#比较有启发性的解析方法：" class="headerlink" title="比较有启发性的解析方法："></a>比较有启发性的解析方法：</h5><ol>
-<li>对象解析:<br>对象分为key和value，所以在解析时会在<code>key</code>和<code>value</code>两个模式中进行切换，初始时<code>key</code>，遇到<code>:</code>转<code>value</code>，遇到<code>,</code>转<code>key</code>。解析到<code>key</code>和<code>value</code>时，会分别添加到<code>keys</code>和<code>values</code>数组。当遇到<code>}</code>闭合字符时，根据两个数组中成员的个数，判断对象是否合法。</li>
+<li>对象解析:<br>对象分为key和value，所以在解析时会在<code>key</code>和<code>value</code>两个模式中进行切换，初始时<code>key</code>，遇到<code>:</code>转<code>value</code>，遇到<code>,</code>转<code>key</code>。解析到<code>key</code>和<code>value</code>时，会分别添加到<code>keys</code>和<code>values</code>数组。当遇到<code>&#125;</code>闭合字符时，根据两个数组中成员的个数，判断对象是否合法。</li>
 <li><p>二元运算式解析：<br>运算式由<strong>运算数（operand）</strong>和<strong>运算符（operator）</strong>组成，先解析运算数后解析运算符，而二元运算符有优先级的问题（<code>a + b * c + d</code>，应该先运算<code>b * c</code>）。</p>
-<p>解决的方法为源码中提到的<a href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm" target="_blank" rel="noopener">Shunting-yard algorithm</a></p>
+<p>解决的方法为源码中提到的<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Shunting-yard_algorithm">Shunting-yard algorithm</a></p>
 <p>中心思想是，<strong>运算数</strong>和<strong>运算符</strong>会按顺序<code>push</code>到数组中，确保扫描到的当前运算符的优先级小于前一个运算符，否则则将前一个二元运算提出来作为一个新的<code>Node</code>（如上面<code>+ d</code>的<code>+</code>）</p>
 <p>（中文译作调度场算法，一种将中缀表达式<code>a + b</code>转成后缀表达<code>a b +</code>的算法，之前好像有在线上课程中提到过，应该是计算机系的课程内容。</p>
 <p>wiki上说中缀表达式不易被电脑识别，但感觉这不构成在这里使用这个算法的理由，毕竟似乎 <strong>“假如当前运算符的优先级高于前一个，则将后面的二元运算式提出”</strong>也行得通。不过可能这样的话，由于还不知道下一个操作数，不好做处理，所以选用了这个算法）。</p>
@@ -412,7 +592,7 @@
 </li>
 </ol>
 <h3 id="compiler的阅读体会"><a href="#compiler的阅读体会" class="headerlink" title="compiler的阅读体会"></a>compiler的阅读体会</h3><ol>
-<li>对于代码表达式来说，通常都会有开始标志和结束标志的这样成对的设计，如html标签<code>&lt;div&gt;&lt;/div&gt;</code>，字符串<code>&#39;a&#39;</code>,<code>&quot;abc&quot;</code>，对象<code>{ a: 1 }</code>，数组<code>[ 1, 2, 3 ]</code>,函数参数<code>(1, 2, 3)</code>。</li>
+<li>对于代码表达式来说，通常都会有开始标志和结束标志的这样成对的设计，如html标签<code>&lt;div&gt;&lt;/div&gt;</code>，字符串<code>&#39;a&#39;</code>,<code>&quot;abc&quot;</code>，对象<code>&#123; a: 1 &#125;</code>，数组<code>[ 1, 2, 3 ]</code>,函数参数<code>(1, 2, 3)</code>。</li>
 <li>之前觉得像对象那样的嵌套结构挺难处理的，但事实上这种情况完全符合递归的场景，只需要再调用根函数即可，像上面说的<code>scanTernary</code></li>
 </ol>
 <h3 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h3><p>下一篇应该是关于整个<code>template</code>编译的学习。现在开始需要多学习框架或者大项目的设计模式，这样才能学会独立从零到一开发项目。</p>
@@ -420,10 +600,10 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/02/23/yox-research-template-expression-episode/" data-id="ck6z56kmn00000su174pvrzdp" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/02/23/yox-research-template-expression-episode/" data-id="ckn4nigx5001djku1ghmg2wbr" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/">vue</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/Yox/" rel="tag">Yox</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/compile/" rel="tag">compile</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/expression/" rel="tag">expression</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/framework/" rel="tag">framework</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/mvvm/" rel="tag">mvvm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/template/" rel="tag">template</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/" rel="tag">vue</a></li></ul>
 
     </footer>
   </div>
@@ -455,7 +635,7 @@
     <div class="article-entry" itemprop="articleBody">
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>年末跟新公司的同事聊过node中间件和服务端渲染的问题，大概的意思就是将原来nginx的特定路由的分发，交由我们前端组负责，使用node代替的想法，希望前端组能够不依赖后端的同学，独立完成一些服务端的工作，方便后面去做服务端渲染。<br>于是，趁着春节假期，在家里花点时间，做一下vue的服务端渲染的实践。</p>
-<h2 id="实践笔记"><a href="#实践笔记" class="headerlink" title="实践笔记"></a>实践笔记</h2><p>由于之前的项目一般都是通过vue-cli去生成的，所以初步的想法是思考将已有项目改为SSR的方法。<br>于是实践便由<code>vue create ssr-demo</code>命令生成的项目开始了。<br>第一步，一般是去查看<a href="https://ssr.vuejs.org/guide/" target="_blank" rel="noopener">官方指南</a>。可喜的是，在某一页中看到了一个官方demo的<a href="https://github.com/vuejs/vue-hackernews-2.0" target="_blank" rel="noopener">github链接</a>，有示例项目作为参照，认识会更具体一些。</p>
+<h2 id="实践笔记"><a href="#实践笔记" class="headerlink" title="实践笔记"></a>实践笔记</h2><p>由于之前的项目一般都是通过vue-cli去生成的，所以初步的想法是思考将已有项目改为SSR的方法。<br>于是实践便由<code>vue create ssr-demo</code>命令生成的项目开始了。<br>第一步，一般是去查看<a target="_blank" rel="noopener" href="https://ssr.vuejs.org/guide/">官方指南</a>。可喜的是，在某一页中看到了一个官方demo的<a target="_blank" rel="noopener" href="https://github.com/vuejs/vue-hackernews-2.0">github链接</a>，有示例项目作为参照，认识会更具体一些。</p>
 <p><strong>SSR大体来说是用同一份代码，分别以server环境和client环境为目标做两次打包（具体来说可以是使用两份配置，运行两次webpack），server端收到请求运行对应环境的bundle，render出html，发回client端；而html里包含了client环境bundle的script，css资源的链接。加载完script以后会hydrate（激活）服务器渲染出来的app的html（如给DOM添加listener）。</strong></p>
 <p>所以在改造项目时，<strong>需要意识到server环境和client环境的API的不同</strong>。<br><strong>改造过程中已知的两个环境的不同点有：</strong></p>
 <ol>
@@ -484,7 +664,7 @@
 <li>到了生成<code>production</code>环境文件的时候，依然还是使用vue-cli进行生成，所以像<code>2</code>中所述，需要在<code>package.json</code>的script中填写<code>vue.config.js</code>的<strong>绝对路径</strong>。跨平台的环境变量设置可以使用<code>cross-env</code>，但是要得到这个<strong>绝对路径</strong>，需要知道<strong>工作目录</strong>。但是在不同平台的<strong>工作目录变量</strong>的名字可能不一样，所以这里使用了<code>$INIT_CWD</code>这个变量。<code>$INIT_CWD</code>指的是<strong>npm指令运行时的工作目录</strong>。</li>
 <li>当我尝试做组件的<strong>Data Prefetch</strong>时，使用了<code>&#39;/topNews&#39;</code>这个相对的url，在client端是没问题的，会带上host和port，但是在server端，他没有这个context，如果是用相对的url，host会是localhost（这个没有问题），但是<strong>port会是默认的80</strong>，所以需要在axios那里根据是否是server环境，去加上如<code>http://localhost:8080</code>的前缀。</li>
 </ol>
-<h3 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h3><p>项目放在<a href="https://github.com/Sociosarbis/vue-ssr-demo" target="_blank" rel="noopener">github</a>，大部分参考自官方的demo，已完成项目框架的搭建。后面假如说真的有需要的话，再进一步完善本项目。<br>后面可做的有:</p>
+<h3 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h3><p>项目放在<a target="_blank" rel="noopener" href="https://github.com/Sociosarbis/vue-ssr-demo">github</a>，大部分参考自官方的demo，已完成项目框架的搭建。后面假如说真的有需要的话，再进一步完善本项目。<br>后面可做的有:</p>
 <ol>
 <li>做成vue-cli的preset，一件生成目录结构。</li>
 <li>添加server的proxy和cache功能。</li>
@@ -494,10 +674,10 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/" data-id="ck64y70vs000fjgu1ohoowycr" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/02/01/vue-ssr-demo-following-official-guide/" data-id="ckn4nigws000tjku1c2ztbosa" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/">vue</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/SSR/" rel="tag">SSR</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/vue/" rel="tag">vue</a></li></ul>
 
     </footer>
   </div>
@@ -528,7 +708,7 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前段时间在做项目的时候，遇到某组图标需要从iconfont改为使用png的情况。这种情况，由于图标本身是比较小的而数量又比较多，为了减少大量http请求的成本，需要把这些图标做成一张sprite图。在不劳烦UI的同学的情况下，那我自行去生成了。<br>本身就有一些现成的网站有这类的服务了，如<a href="https://www.toptal.com/developers/css/sprite-generator" target="_blank" rel="noopener">toptal.com</a>；命令行的话，有spritesmith。其中里面的有一个叫binary-tree的排列方式引起我的兴趣，查看spritesmith的源码，他其实是用了<a href="https://github.com/bryanburgers/bin-pack" target="_blank" rel="noopener">bin-pack</a>提供的算法的。下面开始介绍这种算法。</p>
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前段时间在做项目的时候，遇到某组图标需要从iconfont改为使用png的情况。这种情况，由于图标本身是比较小的而数量又比较多，为了减少大量http请求的成本，需要把这些图标做成一张sprite图。在不劳烦UI的同学的情况下，那我自行去生成了。<br>本身就有一些现成的网站有这类的服务了，如<a target="_blank" rel="noopener" href="https://www.toptal.com/developers/css/sprite-generator">toptal.com</a>；命令行的话，有spritesmith。其中里面的有一个叫binary-tree的排列方式引起我的兴趣，查看spritesmith的源码，他其实是用了<a target="_blank" rel="noopener" href="https://github.com/bryanburgers/bin-pack">bin-pack</a>提供的算法的。下面开始介绍这种算法。</p>
 <h2 id="算法思路"><a href="#算法思路" class="headerlink" title="算法思路"></a>算法思路</h2><ol>
 <li>把图片数组按照它们的面积大小，从大到小排列，并把最大的那张图片放到左上角，并把他的x,y,width,height作为初始root的数值</li>
 <li>遍历所有的图片，一个个对他们进行放置。</li>
@@ -548,10 +728,10 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2020/01/01/2D-bin-packing-algorithm/" data-id="ck64y70us0000jgu1aolk7ih0" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/01/01/2D-bin-packing-algorithm/" data-id="ckn4nigts0000jku103od16xh" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/bin-pack/" rel="tag">bin-pack</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/sprite/" rel="tag">sprite</a></li></ul>
 
     </footer>
   </div>
@@ -592,52 +772,48 @@
 <li>通知页面进行reload</li>
 </ol>
 </li>
-<li>第一点比较简单，可以使用<a href=""><code>fs.watch</code></a>或者跨平台的库<a href="https://www.npmjs.com/package/chokidar" target="_blank" rel="noopener"><code>chokidar</code></a>，都可以进行对文件更改的监听。</li>
+<li>第一点比较简单，可以使用<a href=""><code>fs.watch</code></a>或者跨平台的库<a target="_blank" rel="noopener" href="https://www.npmjs.com/package/chokidar"><code>chokidar</code></a>，都可以进行对文件更改的监听。</li>
 <li>第二点对页面进行通知，我们平时用webpack开发的时候自然会发现页面会打开一个websocket的连接，而这个连接就是起服务器与页面客户端间通信的作用。</li>
 </ul>
 <h3 id="websocket的工作流程"><a href="#websocket的工作流程" class="headerlink" title="websocket的工作流程"></a>websocket的工作流程</h3><ul>
 <li>下一步就是怎么创建一个websokcet的连接的问题，分为两个部分，server和client</li>
 <li>client：<ul>
-<li>对于比较简单的应用，例如这种通知更新的，可以简单地使用浏览器提供的<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket" target="_blank" rel="noopener"><code>Websocket</code></a>的api</li>
+<li>对于比较简单的应用，例如这种通知更新的，可以简单地使用浏览器提供的<a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket"><code>Websocket</code></a>的api</li>
 </ul>
 </li>
 <li><p>sever：</p>
 <ul>
 <li>首先node没有提供直接的api，可以用第三方库或者自己实现。对于第三方库，比较著名的有<code>socket.io</code>，不过需要在页面中使用客户端对应的库，所以不作考虑。而留意到webpack-dev-server用到的库是<code>sockjs-node</code>， 使用浏览器的api就可完成连接，所以这里就选用该库。</li>
 <li><p>先来看一下简单用例①:</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> http = <span class="built_in">require</span>(<span class="string">'http'</span>);</span><br><span class="line"><span class="keyword">const</span> sockjs = <span class="built_in">require</span>(<span class="string">'sockjs'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> echo = sockjs.createServer(&#123; <span class="attr">prefix</span>:<span class="string">'/echo'</span> &#125;);</span><br><span class="line">echo.on(<span class="string">'connection'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">conn</span>) </span>&#123;</span><br><span class="line">conn.on(<span class="string">'data'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">message</span>) </span>&#123;</span><br><span class="line">    conn.write(message);</span><br><span class="line">&#125;);</span><br><span class="line">conn.on(<span class="string">'close'</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;&#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> server = http.createServer();</span><br><span class="line">echo.attach(server);</span><br><span class="line">server.listen(<span class="number">9999</span>, <span class="string">'0.0.0.0'</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> http = <span class="built_in">require</span>(<span class="string">&#x27;http&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> sockjs = <span class="built_in">require</span>(<span class="string">&#x27;sockjs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> echo = sockjs.createServer(&#123; <span class="attr">prefix</span>:<span class="string">&#x27;/echo&#x27;</span> &#125;);</span><br><span class="line">echo.on(<span class="string">&#x27;connection&#x27;</span>, <span class="function"><span class="keyword">function</span>(<span class="params">conn</span>) </span>&#123;</span><br><span class="line">conn.on(<span class="string">&#x27;data&#x27;</span>, <span class="function"><span class="keyword">function</span>(<span class="params">message</span>) </span>&#123;</span><br><span class="line">    conn.write(message);</span><br><span class="line">&#125;);</span><br><span class="line">conn.on(<span class="string">&#x27;close&#x27;</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;&#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> server = http.createServer();</span><br><span class="line">echo.attach(server);</span><br><span class="line">server.listen(<span class="number">9999</span>, <span class="string">&#x27;0.0.0.0&#x27;</span>);</span><br></pre></td></tr></table></figure>
 <p>如果了解过node.js，<code>http.createServer</code>的作用是创建一个http的服务器，那为什么又有一个类似的<code>sockjs.createServer</code>的方法，难道真的是创建多一个服务器吗？<br>带着这个疑问，翻看源码：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Server</span> <span class="keyword">extends</span> <span class="title">events</span>.<span class="title">EventEmitter</span> </span>&#123;</span><br><span class="line">    <span class="keyword">constructor</span>(user_options) &#123;</span><br><span class="line">        <span class="keyword">super</span>();</span><br><span class="line">        <span class="keyword">this</span>.options = <span class="built_in">Object</span>.assign(</span><br><span class="line">        &#123;</span><br><span class="line">            prefix: <span class="string">''</span>,</span><br><span class="line">            transports: [</span><br><span class="line">            <span class="string">'eventsource'</span>,</span><br><span class="line">            <span class="string">'htmlfile'</span>,</span><br><span class="line">            <span class="string">'jsonp-polling'</span>,</span><br><span class="line">            <span class="string">'websocket'</span>,</span><br><span class="line">            <span class="string">'websocket-raw'</span>,</span><br><span class="line">            <span class="string">'xhr-polling'</span>,</span><br><span class="line">            <span class="string">'xhr-streaming'</span></span><br><span class="line">            ],</span><br><span class="line">            response_limit: <span class="number">128</span> * <span class="number">1024</span>,</span><br><span class="line">            faye_server_options: <span class="literal">null</span>,</span><br><span class="line">            jsessionid: <span class="literal">false</span>,</span><br><span class="line">            heartbeat_delay: <span class="number">25000</span>,</span><br><span class="line">            disconnect_delay: <span class="number">5000</span>,</span><br><span class="line">            log() &#123;&#125;,</span><br><span class="line">            sockjs_url: <span class="string">'https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js'</span></span><br><span class="line">        &#125;,</span><br><span class="line">        user_options</span><br><span class="line">        );</span><br><span class="line">        ...</span><br><span class="line">        <span class="keyword">this</span>.handler = webjs.generateHandler(<span class="keyword">this</span>, listener.generateDispatcher(<span class="keyword">this</span>.options));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Server</span> <span class="keyword">extends</span> <span class="title">events</span>.<span class="title">EventEmitter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="title">constructor</span>(<span class="params">user_options</span>)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>();</span><br><span class="line">        <span class="built_in">this</span>.options = <span class="built_in">Object</span>.assign(</span><br><span class="line">        &#123;</span><br><span class="line">            prefix: <span class="string">&#x27;&#x27;</span>,</span><br><span class="line">            transports: [</span><br><span class="line">            <span class="string">&#x27;eventsource&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;htmlfile&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;jsonp-polling&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;websocket&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;websocket-raw&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;xhr-polling&#x27;</span>,</span><br><span class="line">            <span class="string">&#x27;xhr-streaming&#x27;</span></span><br><span class="line">            ],</span><br><span class="line">            response_limit: <span class="number">128</span> * <span class="number">1024</span>,</span><br><span class="line">            faye_server_options: <span class="literal">null</span>,</span><br><span class="line">            jsessionid: <span class="literal">false</span>,</span><br><span class="line">            heartbeat_delay: <span class="number">25000</span>,</span><br><span class="line">            disconnect_delay: <span class="number">5000</span>,</span><br><span class="line">            <span class="function"><span class="title">log</span>(<span class="params"></span>)</span> &#123;&#125;,</span><br><span class="line">            sockjs_url: <span class="string">&#x27;https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js&#x27;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        user_options</span><br><span class="line">        );</span><br><span class="line">        ...</span><br><span class="line">        <span class="built_in">this</span>.handler = webjs.generateHandler(<span class="built_in">this</span>, listener.generateDispatcher(<span class="built_in">this</span>.options));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>可以看到它并没有做任何与连接相关的工作。然后再看到用例①中对于sockjs创建的这个<strong>“server”</strong> ，还有一步是<code>echo.attach(server)</code>，看来这里才是<strong>“sockjs sever”</strong>工作的入口。源码如下：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">attach(server) &#123;</span><br><span class="line">    <span class="keyword">this</span>._rlisteners = <span class="keyword">this</span>._installListener(server, <span class="string">'request'</span>);</span><br><span class="line">    <span class="keyword">this</span>._ulisteners = <span class="keyword">this</span>._installListener(server, <span class="string">'upgrade'</span>);</span><br><span class="line">&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"><span class="function"><span class="title">attach</span>(<span class="params">server</span>)</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>._rlisteners = <span class="built_in">this</span>._installListener(server, <span class="string">&#x27;request&#x27;</span>);</span><br><span class="line">    <span class="built_in">this</span>._ulisteners = <span class="built_in">this</span>._installListener(server, <span class="string">&#x27;upgrade&#x27;</span>);</span><br><span class="line">&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <p>原来是对<strong>http server</strong>的<strong>request</strong>和<strong>upgrade</strong>事件做监听。<br><strong>request</strong>是收到http请求时触发的，那<strong>upgrade</strong>呢？</p>
 <h4 id="根据node的文档所述："><a href="#根据node的文档所述：" class="headerlink" title="根据node的文档所述："></a>根据node的文档所述：</h4><blockquote>
 <p>Emitted each time a server responds to a <strong>request with an upgrade</strong>. </p>
 </blockquote>
 <p>这里的<strong>request with an upgrade</strong>，通过后面的example，粗浅地可以认为是<strong>Connection</strong> header为<code>&#39;Upgrade&#39;</code>，并且还有一个<code>Upgrade</code>header的<strong>request</strong>。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> options = &#123;</span><br><span class="line">    ...</span><br><span class="line">    headers: &#123;</span><br><span class="line">    <span class="string">'Connection'</span>: <span class="string">'Upgrade'</span>,</span><br><span class="line">    <span class="string">'Upgrade'</span>: <span class="string">'websocket'</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">const</span> req = http.request(options);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>request事件的callback参数为<strong>request和response</strong>，而upgrade事件则是<strong>request，socket和head</strong>。第二个参数由<strong>response变为socket</strong>，而这个socket参数就是client和server间的TCP连接，而<strong>websocket</strong>就是对这个<strong>TCP连接的socket对象</strong>进行操作，根据<strong>websocket</strong>协议的规则，对<strong>socket</strong>对象中通信的数据进行解析读入和封装用户的消息进行写入。</p>
-</li>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> options = &#123;</span><br><span class="line">    ...</span><br><span class="line">    headers: &#123;</span><br><span class="line">    <span class="string">&#x27;Connection&#x27;</span>: <span class="string">&#x27;Upgrade&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;Upgrade&#x27;</span>: <span class="string">&#x27;websocket&#x27;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">const</span> req = http.request(options);</span><br></pre></td></tr></table></figure></li>
+<li>request事件的callback参数为<strong>request和response</strong>，而upgrade事件则是<strong>request，socket和head</strong>。第二个参数由<strong>response变为socket</strong>，而这个socket参数就是client和server间的TCP连接，而<strong>websocket</strong>就是对这个<strong>TCP连接的socket对象</strong>进行操作，根据<strong>websocket</strong>协议的规则，对<strong>socket</strong>对象中通信的数据进行解析读入和封装用户的消息进行写入。</li>
 <li><p>顺带一提，对于要upgrade为websocket的请求，服务端也会写入符合http规则的响应报文（而这个过程称作建立websocket连接的握手），并且不会调用<code>response.end或者说socket.end</code>去结束服务端和客户端的连接。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">socket.write(<span class="string">'HTTP/1.1 101 Web Socket Protocol Handshake\r\n'</span> +</span><br><span class="line">    <span class="string">'Upgrade: WebSocket\r\n'</span> +</span><br><span class="line">    <span class="string">'Connection: Upgrade\r\n'</span> +</span><br><span class="line">    <span class="string">'\r\n'</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">socket.write(<span class="string">&#x27;HTTP/1.1 101 Web Socket Protocol Handshake\r\n&#x27;</span> +</span><br><span class="line">    <span class="string">&#x27;Upgrade: WebSocket\r\n&#x27;</span> +</span><br><span class="line">    <span class="string">&#x27;Connection: Upgrade\r\n&#x27;</span> +</span><br><span class="line">    <span class="string">&#x27;\r\n&#x27;</span>);</span><br></pre></td></tr></table></figure>
 <p><strong>ps：</strong>建立websocket的request还会有<code>sec-websocket-version</code>和<code>sec-websocket-key</code>等headers，而response还会有<code>sec-webSocket-accept</code>等headers，由于本文主旨在于建立websocket的通信流程的概念，所以具体的协议标准等知识，可自行search。</p>
 </li>
 <li><p>建立了websocket的连接，下面就是要知道是怎么从socket收到消息和写消息到socket中。这两个步骤对应于这两行来自<strong>faye-websocket\lib\faye\websocket\api.js</strong>的代码(<strong>faye-websocket</strong>是<strong>sockjs-node</strong>的依赖库)</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">this</span>._stream.pipe(<span class="keyword">this</span>._driver.io);</span><br><span class="line"><span class="keyword">this</span>._driver.io.pipe(<span class="keyword">this</span>._stream);</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">this</span>._stream.pipe(<span class="built_in">this</span>._driver.io);</span><br><span class="line"><span class="built_in">this</span>._driver.io.pipe(<span class="built_in">this</span>._stream);</span><br></pre></td></tr></table></figure>
 <p><code>this._stream</code>就是TCP的<code>socket</code>（也是流对象），而<code>this._driver.io</code>是一个双工(Duplex, 意为可读可写)的流。<br><strong>ps:</strong>流就是nodejs的Stream类。</p>
 </li>
-<li>之前我看到pipe这个方法，对他的机制有点摸不着头脑，不知道他是在什么时候才会把数据传到<strong>可写流（Stream.Writable）</strong>中。要解决这个疑问，只需要看到这一步，就知道触发<strong>可读流(Stream.Readable)</strong>的<code>data</code>事件时，就会把数据写到可写流中。而data事件的其中一个触发时机，就在Readable的read方法中。而pipe方法在最后，会通过resume方法，让流进入<strong>flowing</strong> mode，这个mode简单来讲就是假如Readable的<strong>Internal buffer(内部缓存)</strong>，就会通过循环不断地调用read。<h5 id="最后一个疑问他内部缓存地数据又是从哪里来的呢？"><a href="#最后一个疑问他内部缓存地数据又是从哪里来的呢？" class="headerlink" title="最后一个疑问他内部缓存地数据又是从哪里来的呢？"></a>最后一个疑问他内部缓存地数据又是从哪里来的呢？</h5>答案是在<code>read</code>方法中，会调用<code>_read</code>方法。<code>_read</code>方法的作用是调用<code>Readable.push</code>方法，把数据放到<strong>Internal buffer</strong>里。可能这也是为什么在继承或者实现Readable的时候，需要去实现一个<code>_read</code>方法来获取自定义数据。<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// https://github.com/nodejs/node/blob/master/lib/_stream_readable.js</span></span><br><span class="line">src.on(<span class="string">'data'</span>, ondata);</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">ondata</span>(<span class="params">chunk</span>) </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">const</span> ret = dest.write(chunk);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">if</span> (!state.flowing) &#123;</span><br><span class="line">    debug(<span class="string">'pipe resume'</span>);</span><br><span class="line">    src.resume();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> dest;</span><br></pre></td></tr></table></figure>
-</li>
+<li>之前我看到pipe这个方法，对他的机制有点摸不着头脑，不知道他是在什么时候才会把数据传到<strong>可写流（Stream.Writable）</strong>中。要解决这个疑问，只需要看到这一步，就知道触发<strong>可读流(Stream.Readable)</strong>的<code>data</code>事件时，就会把数据写到可写流中。而data事件的其中一个触发时机，就在Readable的read方法中。而pipe方法在最后，会通过resume方法，让流进入<strong>flowing</strong> mode，这个mode简单来讲就是假如Readable的<strong>Internal buffer(内部缓存)</strong>，就会通过循环不断地调用read。<h5 id="最后一个疑问他内部缓存地数据又是从哪里来的呢？"><a href="#最后一个疑问他内部缓存地数据又是从哪里来的呢？" class="headerlink" title="最后一个疑问他内部缓存地数据又是从哪里来的呢？"></a>最后一个疑问他内部缓存地数据又是从哪里来的呢？</h5>答案是在<code>read</code>方法中，会调用<code>_read</code>方法。<code>_read</code>方法的作用是调用<code>Readable.push</code>方法，把数据放到<strong>Internal buffer</strong>里。可能这也是为什么在继承或者实现Readable的时候，需要去实现一个<code>_read</code>方法来获取自定义数据。<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// https://github.com/nodejs/node/blob/master/lib/_stream_readable.js</span></span><br><span class="line">src.on(<span class="string">&#x27;data&#x27;</span>, ondata);</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">ondata</span>(<span class="params">chunk</span>) </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">const</span> ret = dest.write(chunk);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">if</span> (!state.flowing) &#123;</span><br><span class="line">    debug(<span class="string">&#x27;pipe resume&#x27;</span>);</span><br><span class="line">    src.resume();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> dest;</span><br></pre></td></tr></table></figure>
+<h4 id="websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。"><a href="#websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。" class="headerlink" title="websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。"></a>websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。</h4>为了更好地理解下面的内容，可先阅读whistle文档中<a target="_blank" rel="noopener" href="https://wproxy.org/whistle/plugins.html"><strong>插件开发</strong></a>的部分。</li>
 </ul>
 </li>
 </ul>
-<h4 id="websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。"><a href="#websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。" class="headerlink" title="websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。"></a>websocket的内容就介绍到这里，下面是要讲的是完成热重载需求的whistle插件的开发。</h4><p>为了更好地理解下面的内容，可先阅读whistle文档中<a href="https://wproxy.org/whistle/plugins.html" target="_blank" rel="noopener"><strong>插件开发</strong></a>的部分。</p>
 <p>如下是我在看过文档，github上的demo和whistle的源码后的几点所得。</p>
 <ol>
 <li>whistle的插件实际上就是让插件export一个接收<strong>server对象的函数</strong>, 然后自己编写对<strong>server对象</strong>事件响应的callback，事件主要是request和connect，request就是普通的http请求，connect可以是websocket或者tunnel请求(<em>ps:没了解过tunnel请求</em>)</li>
-<li><p><strong>每个插件都会创建一个监听本地新端口的入口server，其主要的作用是把请求分发给它其下的子server，而这些server虽然都是真的http server，但它们不会监听端口，在请求的不同阶段，入口server会把请求分发到对应的子server</strong>，子server有如下这些：</p>
-<ol>
+<li><strong>每个插件都会创建一个监听本地新端口的入口server，其主要的作用是把请求分发给它其下的子server，而这些server虽然都是真的http server，但它们不会监听端口，在请求的不同阶段，入口server会把请求分发到对应的子server</strong>，子server有如下这些：<ol>
 <li>uiServer</li>
 <li>reqRead</li>
 <li>reqWrite</li>
@@ -656,17 +832,15 @@
 <li>wsReqRead</li>
 <li>wsReqWrite</li>
 <li>wsResRead</li>
-<li><p>wsResWrite<br>但问题是具体需要怎么响应对这些server的请求事件，文档里没有说明。只能在提供的demo中找到，某些server具体需要response什么东西。<br>例如<code>&#39;rulesServer&#39;</code>结尾的server，需要response如下的JSON数据来动态地去添加whistle的规则。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">JSON</span>.stringify(&#123;</span><br><span class="line">    rules: <span class="string">`<span class="subst">$&#123;req.headers.host&#125;</span>/sw-register.js file://&#123;sw-register&#125;</span></span><br><span class="line"><span class="string">    <span class="subst">$&#123;req.headers.host&#125;</span>/sw.js file://&#123;sw-content&#125;`</span>,</span><br><span class="line">    values: &#123;</span><br><span class="line">        <span class="string">'sw-register'</span>: registerContent,</span><br><span class="line">        <span class="string">'sw-content'</span>: content</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="literal">null</span>, <span class="number">4</span>)</span><br></pre></td></tr></table></figure>
-<p><strong>rules</strong>是whisle规则的文本，<strong>values</strong>则是用于替换规则中的变量。<br>所以如果我们需要给我页面注入，websocket client的代码的话就在ruleServer中<code>response.end(rules)</code>就可以实现了。</p>
-</li>
+<li>wsResWrite<br>但问题是具体需要怎么响应对这些server的请求事件，文档里没有说明。只能在提供的demo中找到，某些server具体需要response什么东西。<br>例如<code>&#39;rulesServer&#39;</code>结尾的server，需要response如下的JSON数据来动态地去添加whistle的规则。<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">JSON</span>.stringify(&#123;</span><br><span class="line">    rules: <span class="string">`<span class="subst">$&#123;req.headers.host&#125;</span>/sw-register.js file://&#123;sw-register&#125;</span></span><br><span class="line"><span class="string">    <span class="subst">$&#123;req.headers.host&#125;</span>/sw.js file://&#123;sw-content&#125;`</span>,</span><br><span class="line">    values: &#123;</span><br><span class="line">        <span class="string">&#x27;sw-register&#x27;</span>: registerContent,</span><br><span class="line">        <span class="string">&#x27;sw-content&#x27;</span>: content</span><br><span class="line">    &#125;</span><br><span class="line">&#125;, <span class="literal">null</span>, <span class="number">4</span>)</span><br></pre></td></tr></table></figure>
+<strong>rules</strong>是whisle规则的文本，<strong>values</strong>则是用于替换规则中的变量。<br>所以如果我们需要给我页面注入，websocket client的代码的话就在ruleServer中<code>response.end(rules)</code>就可以实现了。</li>
 </ol>
 </li>
 <li>规则的值，如<code>www.ifeng.com method://post</code>中的<code>post</code>，可通过<code>req.originalReq.ruleValue</code>获取。</li>
 <li>server当中有两个比较特别的，一个是<strong>uiServer</strong>，需要写一个完整的有前端页面的web应用，让用户修改插件的配置，给其他server去获取使用。另外一个是上面<strong>No.9的”server”</strong>，这个相当于一个代理的服务器，他的response会成为最后whistle传回来的那个response，其他的如ruleServer，就只是像上面说的只是通过resposne来增加一些临时的新规则。</li>
 <li>*Read,*Write这两种结尾的server，本人到目前为止还不清楚到底要怎么用。</li>
 </ol>
-<h3 id="下面是这个插件简单的实现代码："><a href="#下面是这个插件简单的实现代码：" class="headerlink" title="下面是这个插件简单的实现代码："></a>下面是这个插件简单的实现代码：</h3><p><a href="https://github.com/Sociosarbis/whistle.hot-reload-plugin" target="_blank" rel="noopener">whistle.hot-reload-plugin</a></p>
+<h3 id="下面是这个插件简单的实现代码："><a href="#下面是这个插件简单的实现代码：" class="headerlink" title="下面是这个插件简单的实现代码："></a>下面是这个插件简单的实现代码：</h3><p><a target="_blank" rel="noopener" href="https://github.com/Sociosarbis/whistle.hot-reload-plugin">whistle.hot-reload-plugin</a></p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
 <li>虽然这个功能很简单，但是它涉及到的知识还是很多的，而且还没有完全弄明白， 后面继续学习。</li>
 <li>whistle的代码目前对我来说还是比较复杂的，涉及到协议的不同规则，请求转发， stream pipe等web后端的知识。 </li>
@@ -675,143 +849,10 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2019/12/27/from-whistle-hot-reload-plugin-develoment-to-websocket-mechanism/" data-id="ck64y70xy003fjgu1zri58cwj" class="article-share-link">Share</a>
+      <a data-url="https://sociosarbis.github.io/study-memo/2019/12/27/from-whistle-hot-reload-plugin-develoment-to-websocket-mechanism/" data-id="ckn4nigw8000cjku1dicqcu86" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-HTML-parser-and-querySelector" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2019/11/13/HTML-parser-and-querySelector/" class="article-date">
-  <time datetime="2019-11-13T08:49:36.794Z" itemprop="datePublished">2019-11-13</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2019/11/13/HTML-parser-and-querySelector/">HTML parser和querySelector实现分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
-<li>最近在学习React Native的开发，把web端的网站转成app，由于部分api的缺失，需要从web的HTML里提取信息，那么就需要一个解析HTML的工具。</li>
-<li>cheerio就是其中一个有名的库，但遗憾的是cheerio本身不支持在React Native环境运行。</li>
-<li>记得之前看过微信团队的一个开源项目<a href="https://github.com/wechat-miniprogram/kbone" target="_blank" rel="noopener">kbone</a>是通过在小程序中模拟浏览器环境让面向web端开发的应用也能运行在小程序中。里面就包含了<strong>HTML parser</strong>和<strong>querySelector</strong>的实现，这两个的实现主要是<br>参考了<a href="https://johnresig.com/files/htmlparser.js" target="_blank" rel="noopener">HTMLParser</a>和<a href="https://github.com/jquery/sizzle/tree/master" target="_blank" rel="noopener">Jquery的sizzle</a>。</li>
-<li>具体实现可以到上面的仓库查看相关代码，下面介绍实现的主要逻辑</li>
-</ul>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
-<li><strong>HTML parser</strong><ol>
-<li>建立一个栈stack </li>
-<li>抛开正则表达式不讲，最重要的逻辑是把遇到的<strong>开始标签(opening tag)</strong>时，会做如下操作：<ol>
-<li>如果栈不为空，就<strong>把新的标签加到栈顶的children数组</strong>中</li>
-<li>把它<strong>存到stack</strong></li>
-</ol>
-</li>
-<li>当遇到<strong>结束标签(closing tag)</strong>时，把stack中相同类型的标签压出</li>
-</ol>
-</li>
-<li><strong>querySelector</strong><ol>
-<li>初始的时候，遍历parser解析出的HTML tree，把node的id，class和tag分别加入到<strong>idMap</strong>, <strong>classMap</strong>，<strong>tagMap</strong>中</li>
-<li>selector的解析，<strong>一般我们读的时候是从左往右读的，但这个实现的解析的是从右往右的</strong>。<ol>
-<li>根据最右的规则，决定是从idMap, classMap还是tagMap从取出<strong>最初的候选列表</strong></li>
-<li>从右往左，根据一个个规则去过滤（收窄）候选列表</li>
-</ol>
-<ul>
-<li><em>这样做的好处，能想到的是，从右往左实际上是一种自下而上的方式，可以避免自上而下需要递归的问题。</em></li>
-</ul>
-<ol start="3">
-<li>去重和排序候选列表。去重不说，<strong>排序它使用的方法是</strong>，先找到两个node的最小的共同祖先A，设B为A下的子节点（B可能为node的祖先或者node本身），根据两个B的先后顺序，来决定node的先后顺序</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
-<h2 id="感想"><a href="#感想" class="headerlink" title="感想"></a>感想</h2><ol>
-<li>JS现在可以做跨平台的开发，虽然有些方法在浏览器中是有的，但可能别的平台没有，这时候就需要开发者去了解DOM API的实现方式。</li>
-<li>假如浏览器的querySelector也是类似上述的实现方式，那么对于CSS selector的优化，可以做如下三点:<ol>
-<li>优先度应该是<strong>id，class再到tag</strong>，<strong>class方面尽量使用出现频率较少的那个</strong>，<strong>尽量不要用*</strong>，因为用*相当于选择了所有的tag类型</li>
-<li>关系选择器方面，<strong>尽量不要用跨层的空格selector</strong>，而要使用表示直接关系的</li>
-<li><strong>selector要尽量短</strong>，因为每多一层就多一次判断</li>
-</ol>
-</li>
-</ol>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/13/HTML-parser-and-querySelector/" data-id="ck64y70v40001jgu14vg1177u" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-Leetcode-84-Largest-Rectangle-in-Histogram" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/study-memo/2019/11/10/Leetcode-84-Largest-Rectangle-in-Histogram/" class="article-date">
-  <time datetime="2019-11-10T14:42:27.439Z" itemprop="datePublished">2019-11-10</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/study-memo/2019/11/10/Leetcode-84-Largest-Rectangle-in-Histogram/">Leetcode 84 Largest Rectangle in Histogram分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><a href="https://leetcode-cn.com/problems/largest-rectangle-in-histogram/" target="_blank" rel="noopener">题目链接</a></p>
-<p>根据题解得到的思路：</p>
-<ol>
-<li>矩形大小等于区间内最低柱形高度乘以区间的大小</li>
-<li>最大矩形等于<strong>以各柱形为最低高度时</strong>围绕它形成的最大区间的矩形大小的最大值</li>
-<li>每个柱形形成的区间的<strong>左右边界</strong>为<strong>小于它高度且最靠近</strong>的矩形或者<strong>柱形数组的边界</strong></li>
-</ol>
-<p><strong>为了求出这些区间，题解中使用了一个栈结构</strong></p>
-<p><strong>栈具有如下性质</strong></p>
-<ol>
-<li>每个柱形的index都会压入栈中</li>
-<li>柱形A的index入栈前先把栈中高度小于A的index出栈，保证栈中index所指向的高度<strong>保持依次增大</strong>的性质。</li>
-</ol>
-<p><strong>换句话说栈中的上一个元素其实是当前元素的左界（因为是依次增大），</strong><br><strong>当元素出栈时（大于新加入的元素），就是右界确定的时候，左右界确定后，区间矩形大小就能求出了</strong></p>
-<p><strong>参考解法</strong><br><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">largestRectangleArea</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; heights)</span> </span>&#123;</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="built_in">stack</span> = &#123; <span class="number">-1</span> &#125;;</span><br><span class="line">        <span class="keyword">int</span> heightsLength = heights.size();</span><br><span class="line">        <span class="keyword">int</span> maxArea = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> backIndex = <span class="number">-1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>;i &lt; heightsLength;i++)</span><br><span class="line">        &#123;</span><br><span class="line">          backIndex = <span class="built_in">stack</span>.back();</span><br><span class="line">          <span class="keyword">while</span>(backIndex != <span class="number">-1</span> &amp;&amp; heights[backIndex] &gt; heights[i])</span><br><span class="line">          &#123;</span><br><span class="line">            maxArea = max((i - <span class="built_in">stack</span>[<span class="built_in">stack</span>.size() - <span class="number">2</span>] - <span class="number">1</span>) * heights[backIndex], maxArea);</span><br><span class="line">            <span class="built_in">stack</span>.pop_back();</span><br><span class="line">            backIndex = <span class="built_in">stack</span>.back();</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="built_in">stack</span>.push_back(i);</span><br><span class="line">        &#125;</span><br><span class="line">        backIndex = <span class="built_in">stack</span>.back();</span><br><span class="line">        <span class="keyword">while</span>(backIndex != <span class="number">-1</span>)</span><br><span class="line">        &#123;</span><br><span class="line">          maxArea = max(maxArea, (heightsLength - <span class="built_in">stack</span>[<span class="built_in">stack</span>.size() - <span class="number">2</span>] - <span class="number">1</span>) * heights[backIndex]);</span><br><span class="line">          <span class="built_in">stack</span>.pop_back();</span><br><span class="line">          backIndex = <span class="built_in">stack</span>.back();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> maxArea;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sociosarbis.github.io/study-memo/2019/11/10/Leetcode-84-Largest-Rectangle-in-Histogram/" data-id="ck64y70va0003jgu1wvtsd3tk" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/stack/">stack</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/hot-reload/" rel="tag">hot-reload</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/plugin/" rel="tag">plugin</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/stream/" rel="tag">stream</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/websocket/" rel="tag">websocket</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/whistle/" rel="tag">whistle</a></li></ul>
 
     </footer>
   </div>
@@ -824,7 +865,7 @@
 
   <nav id="page-nav">
     
-    <span class="page-number current">1</span><a class="page-number" href="/study-memo/page/2/">2</a><a class="page-number" href="/study-memo/page/3/">3</a><a class="extend next" rel="next" href="/study-memo/page/2/">Next &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/study-memo/page/2/">2</a><a class="page-number" href="/study-memo/page/3/">3</a><a class="extend next" rel="next" href="/study-memo/page/2/">Next &amp;raquo;</a>
   </nav>
 
 </section>
@@ -838,7 +879,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/KMP/">KMP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/location指令/">location指令</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/nginx/">nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/submodule/">submodule</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/立即执行函数/">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/语义化/">语义化</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/" rel="tag">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/" rel="tag">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/" rel="tag">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/" rel="tag">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/" rel="tag">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/" rel="tag">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/" rel="tag">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/" rel="tag">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/KMP/" rel="tag">KMP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/" rel="tag">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/" rel="tag">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/" rel="tag">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/" rel="tag">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/" rel="tag">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/" rel="tag">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/chart/" rel="tag">chart</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/" rel="tag">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/d3/" rel="tag">d3</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/" rel="tag">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/" rel="tag">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/" rel="tag">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/excel/" rel="tag">excel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/" rel="tag">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/" rel="tag">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/" rel="tag">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/" rel="tag">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/" rel="tag">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/" rel="tag">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/" rel="tag">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/" rel="tag">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/" rel="tag">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/location%E6%8C%87%E4%BB%A4/" rel="tag">location指令</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/" rel="tag">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/" rel="tag">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/nginx/" rel="tag">nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/" rel="tag">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/" rel="tag">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/" rel="tag">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/" rel="tag">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/" rel="tag">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/" rel="tag">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/" rel="tag">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/rust/" rel="tag">rust</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/" rel="tag">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/" rel="tag">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/" rel="tag">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/" rel="tag">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/" rel="tag">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/" rel="tag">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/submodule/" rel="tag">submodule</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/svg/" rel="tag">svg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/" rel="tag">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/" rel="tag">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/" rel="tag">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/" rel="tag">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/" rel="tag">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webAssembly/" rel="tag">webAssembly</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/" rel="tag">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/" rel="tag">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/" rel="tag">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/%E7%AB%8B%E5%8D%B3%E6%89%A7%E8%A1%8C%E5%87%BD%E6%95%B0/" rel="tag">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/%E8%AF%AD%E4%B9%89%E5%8C%96/" rel="tag">语义化</a></li></ul>
     </div>
   </div>
 
@@ -848,7 +889,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 14px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/KMP/" style="font-size: 10px;">KMP</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 18px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 12px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 14px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/location指令/" style="font-size: 10px;">location指令</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/submodule/" style="font-size: 10px;">submodule</a> <a href="/study-memo/tags/template/" style="font-size: 12px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 16px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/立即执行函数/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/语义化/" style="font-size: 10px;">语义化</a>
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 14px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/KMP/" style="font-size: 10px;">KMP</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 18px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/chart/" style="font-size: 10px;">chart</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/d3/" style="font-size: 10px;">d3</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/excel/" style="font-size: 10px;">excel</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 12px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 14px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/location%E6%8C%87%E4%BB%A4/" style="font-size: 10px;">location指令</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/rust/" style="font-size: 10px;">rust</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/submodule/" style="font-size: 10px;">submodule</a> <a href="/study-memo/tags/svg/" style="font-size: 10px;">svg</a> <a href="/study-memo/tags/template/" style="font-size: 12px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 16px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webAssembly/" style="font-size: 10px;">webAssembly</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/%E7%AB%8B%E5%8D%B3%E6%89%A7%E8%A1%8C%E5%87%BD%E6%95%B0/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/%E8%AF%AD%E4%B9%89%E5%8C%96/" style="font-size: 10px;">语义化</a>
     </div>
   </div>
 
@@ -857,7 +898,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2021/04/">April 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
     </div>
   </div>
 
@@ -870,6 +911,14 @@
       <ul>
         
           <li>
+            <a href="/study-memo/2021/04/05/some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files/">使用rust &amp; webAssembly开发导出excel文件功能后的感想</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/10/08/d3-learning-memo/">D3学习备忘</a>
+          </li>
+        
+          <li>
             <a href="/study-memo/2020/08/30/memo-for-KMP-algorithm/">KMP算法笔记</a>
           </li>
         
@@ -878,15 +927,7 @@
           </li>
         
           <li>
-            <a href="/study-memo/2020/04/19/optimization-techniques-for-better-performance-of-vue-app/">Vue应用性能调优技巧</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2020/03/18/experience-of-using-git-submodule/">git submodule的使用经验</a>
-          </li>
-        
-          <li>
-            <a href="/study-memo/2020/02/23/yox-research-template-expression-episode/">Yox框架研究（1）—模板表达式编译篇</a>
+            <a href="/study-memo/2020/07/05/experience-of-using-git-submodule/">git submodule的使用经验</a>
           </li>
         
       </ul>
@@ -901,7 +942,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2020 Sociosarbis<br>
+      &copy; 2021 Sociosarbis<br>
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
@@ -919,11 +960,17 @@
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 
-  <link rel="stylesheet" href="/study-memo/fancybox/jquery.fancybox.css">
-  <script src="/study-memo/fancybox/jquery.fancybox.pack.js"></script>
+  
+<link rel="stylesheet" href="/study-memo/fancybox/jquery.fancybox.css">
+
+  
+<script src="/study-memo/fancybox/jquery.fancybox.pack.js"></script>
+
+
 
 
 <script src="/study-memo/js/script.js"></script>
+
 
 
 

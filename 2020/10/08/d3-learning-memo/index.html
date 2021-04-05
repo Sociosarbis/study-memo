@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>D3学习备忘 | a house in the woods</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前言在web前端开发中，时常会碰到显示图表的需求。而在这个领域中，国内最有名的库莫过于Echarts了，其他的还有Ant的g2，highchart和chart.js等，这些库的特点是开箱即用，基于配置，根据官方提供的demo，进行一定的调整就能够满足开发的任务的，也有提供自定义的方案，满足特殊的需求。 不过我总感觉不能满足于这种高级封装库提供的便利，因为这样比较难提升自己的开发能力，所以希望去折腾">
+<meta property="og:type" content="article">
+<meta property="og:title" content="D3学习备忘">
+<meta property="og:url" content="https://sociosarbis.github.io/study-memo/2020/10/08/d3-learning-memo/index.html">
+<meta property="og:site_name" content="a house in the woods">
+<meta property="og:description" content="前言在web前端开发中，时常会碰到显示图表的需求。而在这个领域中，国内最有名的库莫过于Echarts了，其他的还有Ant的g2，highchart和chart.js等，这些库的特点是开箱即用，基于配置，根据官方提供的demo，进行一定的调整就能够满足开发的任务的，也有提供自定义的方案，满足特殊的需求。 不过我总感觉不能满足于这种高级封装库提供的便利，因为这样比较难提升自己的开发能力，所以希望去折腾">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-10-08T14:03:35.678Z">
+<meta property="article:modified_time" content="2020-10-11T12:58:09.521Z">
+<meta property="article:author" content="Sociosarbis">
+<meta property="article:tag" content="d3">
+<meta property="article:tag" content="chart">
+<meta property="article:tag" content="svg">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/study-memo/atom.xml" title="a house in the woods" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/study-memo/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/study-memo/" id="logo">a house in the woods</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/study-memo/">Home</a>
+        
+          <a class="main-nav-link" href="/study-memo/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/study-memo/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://sociosarbis.github.io/study-memo"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-d3-learning-memo" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/study-memo/2020/10/08/d3-learning-memo/" class="article-date">
+  <time datetime="2020-10-08T14:03:35.678Z" itemprop="datePublished">2020-10-08</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      D3学习备忘
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在web前端开发中，时常会碰到显示图表的需求。而在这个领域中，国内最有名的库莫过于<code>Echarts</code>了，其他的还有<code>Ant</code>的<code>g2</code>，<code>highchart</code>和<code>chart.js</code>等，这些库的特点是开箱即用，基于配置，根据官方提供的demo，进行一定的调整就能够满足开发的任务的，也有提供自定义的方案，满足特殊的需求。</p>
+<p>不过我总感觉不能满足于这种高级封装库提供的便利，因为这样比较难提升自己的开发能力，所以希望去折腾些较底层的库，让自己可以多动些脑筋。（也有一种潮流是直接使用<code>React</code>这类前端框架，做可视化的工作（同样也是数据驱动视图），不过这样子就相当于再造一个轮子了）</p>
+<p>而<code>d3</code>就是一个很好的选择，历史悠久，使用者众多，作者<code>Mike Bostock</code>也是个很有创造力的开发者，独力写了很多优秀的<code>可视化demo</code>，除了<code>d3</code>还创建了可视化分享平台<code>Observerblehq</code>。</p>
+<p><code>API</code>设计方面采用了类似<code>JQuery</code>的链式调用，代码组织的特点是分成了多个独立的模块，分开仓库进行管理，所以也方便使用者按需引入。<code>d3</code>的类的创建，不使用<code>new</code>的方式，而通过函数返回一个新的对象，对象相关的变量，存储在闭包内。</p>
+<p>我觉得<code>d3</code>主要是一个可视化数据处理工具函数的库，不提供图形渲染引擎，所以可以让使用者全盘掌控显示的内容。</p>
+<h1 id="API概念说明"><a href="#API概念说明" class="headerlink" title="API概念说明"></a>API概念说明</h1><h2 id="d3-selection"><a href="#d3-selection" class="headerlink" title="d3.selection"></a>d3.selection</h2><p><code>d3</code>的DOM操作的风格十分类似<code>Jquery</code></p>
+<ol>
+<li>创建DOM元素并返回一个类似<code>Jquery</code>集合的<code>Selection</code>对象</li>
+</ol>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">d3.create(<span class="string">&#x27;svg&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li><p>选择DOM元素，<code>select</code>和<code>selectAll</code>都会返回一个<code>Selection</code>。</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">selection.select(<span class="string">&#x27;rect&#x27;</span>)</span><br><span class="line">selection.selectAll(<span class="string">&#x27;rect&#x27;</span>)</span><br><span class="line"><span class="comment">// 或者使用d3的静态方法</span></span><br><span class="line">d3.select(<span class="string">&#x27;rect&#x27;</span>)</span><br><span class="line">d3.selectAll(<span class="string">&#x27;rect&#x27;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>绑定数据。绑定数据的方法有<code>data</code>和<code>datum</code>两种，<code>data</code>会返回一个新的集合并逐一把每一行数据绑定给<code>selection</code>中的成员，如原<code>selection</code>中的成员数量比<code>data</code>的行数小，则新创建的<code>selection</code>会使用占位用的<code>empty</code>补足；<code>datum</code>则是将整组数据逐一绑定给每一个<code>selection</code>成员，不会产生新的集合。</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr: <span class="built_in">any</span>[]</span><br><span class="line">selection.data(arr)</span><br><span class="line"><span class="comment">// 设置selection各成员绑定的数据</span></span><br><span class="line">selection.datum(arr)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>绑定数据的行数与<code>selection</code>的数量有出入时，<code>d3</code>会产生<code>enter</code>和<code>exit</code>的集合。但是并不会默认给<code>enter</code>的集合自动创建对应的DOM元素，这时可使用<code>join</code>去创建。</p>
+</li>
+</ol>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> arr: <span class="built_in">any</span>[]</span><br><span class="line">selection.data(arr).join(<span class="string">&#x27;rect&#x27;</span><span class="comment">/** 元素的标签名 */</span>)</span><br><span class="line"><span class="comment">// 与上面等价</span></span><br><span class="line">selection.data(arr).enter().append(<span class="string">&#x27;rect&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<ol start="5">
+<li><code>selection.call</code>接收一个以<code>selection</code>为参数的回调函数，目前看来用途主要给<code>selection</code>添加一些子元素，这样就不会改变外部链式调用的主体。</li>
+</ol>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">selection.call(<span class="function">(<span class="params">s</span>) =&gt;</span> s.append(<span class="string">&#x27;path&#x27;</span>))</span><br></pre></td></tr></table></figure>
+<ol start="6">
+<li><code>selection.each</code>方法并不会回传一个子<code>selection</code>，而是回传三个参数<code>d</code>（<strong>子data</strong>）, <code>i</code>（索引），<code>nodesGroup</code>（<code>selection</code>内部的DOM集合），回调函数的<code>this</code>等同于<code>nodesGroup[i]</code><figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">selection.each(<span class="function"><span class="keyword">function</span> (<span class="params">d, i, nodesGroup</span>) </span>&#123;</span><br><span class="line">  <span class="comment">// 由于并不是子selection，所以需要进行select把DOM变成d3的selection对象</span></span><br><span class="line">  d3.select(<span class="built_in">this</span>)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="d3-Shape"><a href="#d3-Shape" class="headerlink" title="d3.Shape"></a>d3.Shape</h2><ol>
+<li><code>d3.lineRadial</code>与<code>d3.line</code>作用同样都是生成线段，不同的是<code>lineRadial</code>的坐标系是<strong>极坐标系</strong>，而且需要注意的是<strong>0 rad</strong>是<strong>12点方向，角度增长为顺时针</strong>，每个点由<code>angle</code>和<code>radius</code>方法定义。</li>
+</ol>
+<h2 id="d3-polygon"><a href="#d3-polygon" class="headerlink" title="d3.polygon"></a>d3.polygon</h2><ol>
+<li><code>d3.polygonCentroid</code>，求多边形的中点a。</li>
+</ol>
+<p>原理是以<code>[P_(n - 1), P_n, [0, 0]]</code>为顶点组成三角形，求出各个三角形的中点<code>P_m_n</code>（顶点坐标和除以3）。</p>
+<p>然后各个顶点根据权重<code>W（三角形n的面积 / 所有三角形的面积和）</code>相加求得。</p>
+<p><code>三角形的面积 = (V_(n - 1) X（叉积） V_n) * 0.5</code></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sociosarbis.github.io/study-memo/2020/10/08/d3-learning-memo/" data-id="ckn4nigw40008jku146xw0q6l" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/chart/" rel="tag">chart</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/d3/" rel="tag">d3</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/study-memo/tags/svg/" rel="tag">svg</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/study-memo/2021/04/05/some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          使用rust &amp; webAssembly开发导出excel文件功能后的感想
+        
+      </div>
+    </a>
+  
+  
+    <a href="/study-memo/2020/08/30/memo-for-KMP-algorithm/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">KMP算法笔记</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/AST/" rel="tag">AST</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/C/" rel="tag">C++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CLI/" rel="tag">CLI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/CSS/" rel="tag">CSS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Clang/" rel="tag">Clang++</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTML/" rel="tag">HTML</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/HTTP/" rel="tag">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/IIFE/" rel="tag">IIFE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/KMP/" rel="tag">KMP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Needleman-Wunsch/" rel="tag">Needleman-Wunsch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/SSR/" rel="tag">SSR</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Vue/" rel="tag">Vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/Yox/" rel="tag">Yox</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/algorithm/" rel="tag">algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/bin-pack/" rel="tag">bin-pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/chart/" rel="tag">chart</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/compile/" rel="tag">compile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/d3/" rel="tag">d3</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/diff/" rel="tag">diff</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/dll/" rel="tag">dll</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/eventloop/" rel="tag">eventloop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/excel/" rel="tag">excel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/expression/" rel="tag">expression</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/externals/" rel="tag">externals</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/framework/" rel="tag">framework</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/git/" rel="tag">git</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hoisting/" rel="tag">hoisting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/hot-reload/" rel="tag">hot-reload</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/interview/" rel="tag">interview</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/javascript/" rel="tag">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/leetcode/" rel="tag">leetcode</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/location%E6%8C%87%E4%BB%A4/" rel="tag">location指令</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/meta/" rel="tag">meta</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/mvvm/" rel="tag">mvvm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/nginx/" rel="tag">nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/parser/" rel="tag">parser</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/performance/" rel="tag">performance</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/plugin/" rel="tag">plugin</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/promise/" rel="tag">promise</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/querySelector/" rel="tag">querySelector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/react/" rel="tag">react</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/redux/" rel="tag">redux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/rust/" rel="tag">rust</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/setTimeout/" rel="tag">setTimeout</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sorting/" rel="tag">sorting</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/sprite/" rel="tag">sprite</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stack/" rel="tag">stack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/store/" rel="tag">store</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/stream/" rel="tag">stream</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/submodule/" rel="tag">submodule</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/svg/" rel="tag">svg</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/template/" rel="tag">template</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/temporary-variable/" rel="tag">temporary variable</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/viewport/" rel="tag">viewport</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/vue/" rel="tag">vue</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/watcher/" rel="tag">watcher</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webAssembly/" rel="tag">webAssembly</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/webpack/" rel="tag">webpack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/websocket/" rel="tag">websocket</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/whistle/" rel="tag">whistle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/windows/" rel="tag">windows</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/%E7%AB%8B%E5%8D%B3%E6%89%A7%E8%A1%8C%E5%87%BD%E6%95%B0/" rel="tag">立即执行函数</a></li><li class="tag-list-item"><a class="tag-list-link" href="/study-memo/tags/%E8%AF%AD%E4%B9%89%E5%8C%96/" rel="tag">语义化</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/study-memo/tags/AST/" style="font-size: 10px;">AST</a> <a href="/study-memo/tags/C/" style="font-size: 10px;">C++</a> <a href="/study-memo/tags/CLI/" style="font-size: 10px;">CLI</a> <a href="/study-memo/tags/CSS/" style="font-size: 10px;">CSS</a> <a href="/study-memo/tags/Clang/" style="font-size: 10px;">Clang++</a> <a href="/study-memo/tags/HTML/" style="font-size: 14px;">HTML</a> <a href="/study-memo/tags/HTTP/" style="font-size: 10px;">HTTP</a> <a href="/study-memo/tags/IIFE/" style="font-size: 10px;">IIFE</a> <a href="/study-memo/tags/KMP/" style="font-size: 10px;">KMP</a> <a href="/study-memo/tags/Needleman-Wunsch/" style="font-size: 10px;">Needleman-Wunsch</a> <a href="/study-memo/tags/SSR/" style="font-size: 10px;">SSR</a> <a href="/study-memo/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/study-memo/tags/Yox/" style="font-size: 10px;">Yox</a> <a href="/study-memo/tags/algorithm/" style="font-size: 18px;">algorithm</a> <a href="/study-memo/tags/bin-pack/" style="font-size: 10px;">bin-pack</a> <a href="/study-memo/tags/chart/" style="font-size: 10px;">chart</a> <a href="/study-memo/tags/compile/" style="font-size: 10px;">compile</a> <a href="/study-memo/tags/d3/" style="font-size: 10px;">d3</a> <a href="/study-memo/tags/diff/" style="font-size: 10px;">diff</a> <a href="/study-memo/tags/dll/" style="font-size: 10px;">dll</a> <a href="/study-memo/tags/eventloop/" style="font-size: 10px;">eventloop</a> <a href="/study-memo/tags/excel/" style="font-size: 10px;">excel</a> <a href="/study-memo/tags/expression/" style="font-size: 10px;">expression</a> <a href="/study-memo/tags/externals/" style="font-size: 10px;">externals</a> <a href="/study-memo/tags/framework/" style="font-size: 10px;">framework</a> <a href="/study-memo/tags/git/" style="font-size: 12px;">git</a> <a href="/study-memo/tags/hoisting/" style="font-size: 10px;">hoisting</a> <a href="/study-memo/tags/hot-reload/" style="font-size: 10px;">hot-reload</a> <a href="/study-memo/tags/interview/" style="font-size: 20px;">interview</a> <a href="/study-memo/tags/javascript/" style="font-size: 14px;">javascript</a> <a href="/study-memo/tags/leetcode/" style="font-size: 10px;">leetcode</a> <a href="/study-memo/tags/location%E6%8C%87%E4%BB%A4/" style="font-size: 10px;">location指令</a> <a href="/study-memo/tags/meta/" style="font-size: 10px;">meta</a> <a href="/study-memo/tags/mvvm/" style="font-size: 10px;">mvvm</a> <a href="/study-memo/tags/nginx/" style="font-size: 10px;">nginx</a> <a href="/study-memo/tags/parser/" style="font-size: 10px;">parser</a> <a href="/study-memo/tags/performance/" style="font-size: 12px;">performance</a> <a href="/study-memo/tags/plugin/" style="font-size: 10px;">plugin</a> <a href="/study-memo/tags/promise/" style="font-size: 10px;">promise</a> <a href="/study-memo/tags/querySelector/" style="font-size: 10px;">querySelector</a> <a href="/study-memo/tags/react/" style="font-size: 10px;">react</a> <a href="/study-memo/tags/redux/" style="font-size: 10px;">redux</a> <a href="/study-memo/tags/rust/" style="font-size: 10px;">rust</a> <a href="/study-memo/tags/setTimeout/" style="font-size: 10px;">setTimeout</a> <a href="/study-memo/tags/sorting/" style="font-size: 10px;">sorting</a> <a href="/study-memo/tags/sprite/" style="font-size: 10px;">sprite</a> <a href="/study-memo/tags/stack/" style="font-size: 10px;">stack</a> <a href="/study-memo/tags/store/" style="font-size: 10px;">store</a> <a href="/study-memo/tags/stream/" style="font-size: 10px;">stream</a> <a href="/study-memo/tags/submodule/" style="font-size: 10px;">submodule</a> <a href="/study-memo/tags/svg/" style="font-size: 10px;">svg</a> <a href="/study-memo/tags/template/" style="font-size: 12px;">template</a> <a href="/study-memo/tags/temporary-variable/" style="font-size: 10px;">temporary variable</a> <a href="/study-memo/tags/viewport/" style="font-size: 10px;">viewport</a> <a href="/study-memo/tags/vue/" style="font-size: 16px;">vue</a> <a href="/study-memo/tags/watcher/" style="font-size: 10px;">watcher</a> <a href="/study-memo/tags/webAssembly/" style="font-size: 10px;">webAssembly</a> <a href="/study-memo/tags/webpack/" style="font-size: 10px;">webpack</a> <a href="/study-memo/tags/websocket/" style="font-size: 10px;">websocket</a> <a href="/study-memo/tags/whistle/" style="font-size: 10px;">whistle</a> <a href="/study-memo/tags/windows/" style="font-size: 10px;">windows</a> <a href="/study-memo/tags/%E7%AB%8B%E5%8D%B3%E6%89%A7%E8%A1%8C%E5%87%BD%E6%95%B0/" style="font-size: 10px;">立即执行函数</a> <a href="/study-memo/tags/%E8%AF%AD%E4%B9%89%E5%8C%96/" style="font-size: 10px;">语义化</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2021/04/">April 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/10/">October 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/05/">May 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/03/">March 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2019/01/">January 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/12/">December 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/11/">November 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/study-memo/archives/2018/10/">October 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/study-memo/2021/04/05/some-thoughts-after-using-rust-webAssembly-based-approach-to-generate-excel-files/">使用rust &amp; webAssembly开发导出excel文件功能后的感想</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/10/08/d3-learning-memo/">D3学习备忘</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/08/30/memo-for-KMP-algorithm/">KMP算法笔记</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/08/16/misunderstandings-of-nginx-location-config/">nginx location指令配置的误解</a>
+          </li>
+        
+          <li>
+            <a href="/study-memo/2020/07/05/experience-of-using-git-submodule/">git submodule的使用经验</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 Sociosarbis<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/study-memo/" class="mobile-nav-link">Home</a>
+  
+    <a href="/study-memo/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/study-memo/fancybox/jquery.fancybox.css">
+
+  
+<script src="/study-memo/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/study-memo/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
