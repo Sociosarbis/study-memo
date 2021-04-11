@@ -6,7 +6,7 @@
     "version": "5.4.0"
   },
   "scripts": {
-    "install:theme": "cd themes/suka && yarn install && cp -i ./themes/suka/_config.example.yml ./themes/suka/_config.yml",
+    "install:theme": "cd themes/suka && yarn install && cp -i _config.example.yml _config.yml",
     "build": "yarn install:theme && hexo generate"
   },
   "dependencies": {
