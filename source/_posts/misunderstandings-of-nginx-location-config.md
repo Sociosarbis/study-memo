@@ -3,6 +3,7 @@ title: nginx location指令配置的误解
 tags:
   - nginx
   - location指令
+date: 2020-08-16 15:26:59
 ---
 
 ### 源起

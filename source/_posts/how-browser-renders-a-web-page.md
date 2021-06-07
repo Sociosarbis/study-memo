@@ -5,6 +5,7 @@ tags:
   - rendering
   - DOM
   - CSSOM
+date: 2021-06-07 21:15:51
 ---
 
 浏览器的渲染过程可以用`critical rendering path`来描述。

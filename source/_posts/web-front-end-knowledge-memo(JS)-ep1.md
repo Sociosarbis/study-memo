@@ -6,6 +6,7 @@ tags:
   - eventloop
   - setTimeout
   - promise
+date: 2019-11-02 21:56:06
 ---
 
 一条关于setTimeout和promise的执行顺序的题目。

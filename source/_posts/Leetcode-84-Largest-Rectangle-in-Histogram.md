@@ -4,6 +4,7 @@ tags:
   - leetcode
   - algorithm
   - stack
+date: 2019-11-10 23:18:39
 ---
 [题目链接](https://leetcode-cn.com/problems/largest-rectangle-in-histogram/)
 

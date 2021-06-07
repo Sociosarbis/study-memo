@@ -5,6 +5,7 @@ tags:
   - HTML
   - meta
   - viewport
+date: 2019-11-02 21:56:06
 ---
 移动端的适配离不开meta标签的viewport设置，比较常见的设置
 ```html

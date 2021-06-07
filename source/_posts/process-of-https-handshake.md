@@ -4,6 +4,7 @@ tags:
   - https
   - tls
   - handshake
+date: 2021-06-06 00:33:25
 ---
 `https`是在`http`的基础上加入`tls`对数据进行加密，增加安全度的协议。
 

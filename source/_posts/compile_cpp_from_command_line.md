@@ -5,6 +5,7 @@ tags:
   - Clang++
   - CLI
   - windows
+date: 2019-03-10 22:33:57
 ---
 最近这几个月都有在看C++的知识，由于之前一直都在用VSCode写代码，所以也想在编写C++代码时也尽量不需要换IDE。但是本身VSCode在辅助编译上没有等提供UI的支持，所以需要知道一些原始的命令行编译方面的配置。
 VSCode的改作C++IDE，可以按照这个网页的说明进行配置[VSCode的C++配置]https://www.zhihu.com/question/30315894/answer/154979413

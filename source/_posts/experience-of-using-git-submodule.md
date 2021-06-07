@@ -3,6 +3,7 @@ title: git submodule的使用经验
 tags:
   - git
   - submodule
+date: 2020-06-28 00:32:06
 ---
 ### 前言
 上两周开始，我开始在实际项目中使用之前同事提到过的`git submodule`的代码管理方式。

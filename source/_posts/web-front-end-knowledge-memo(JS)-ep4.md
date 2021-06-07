@@ -4,6 +4,7 @@ tags:
   - es6
   - class
   - syntatic sugar
+date: 2021-05-26 23:12:16
 ---
 ## 拆解class语法糖
 下面根据经`babel`转移后的`class extends`代码，说明`class`语法糖所作工作的要点。

@@ -8,6 +8,7 @@ tags:
   - template
   - expression
   - compile
+date: 2020-02-23 22:44:20
 ---
 ### 缘起
 在google上搜索 **"vue不能兼容IE8"**，在知乎上看到Yox的作者在推他写的这个框架。这个框架的特点是属性方法设计基本与`vue`一致，模板语法参照`handlebar`，能兼容IE6以上的浏览器。

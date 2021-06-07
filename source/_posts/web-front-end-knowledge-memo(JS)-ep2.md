@@ -5,6 +5,7 @@ tags:
   - javascript
   - 立即执行函数
   - IIFE
+date: 2019-11-02 21:56:06
 ---
 ## 立即执行函数（immediatly invoked function expression）
 从题目总结其性质

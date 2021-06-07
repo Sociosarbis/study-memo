@@ -3,6 +3,7 @@ title: web前端知识学习笔记-CSS篇(1)
 tags:
   - interview
   - CSS
+date: 2019-11-02 21:56:06
 ---
 1. 一列自适应，一列固定的两列布局实现。
 ```css
