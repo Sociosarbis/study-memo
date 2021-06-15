@@ -16,5 +16,13 @@ date: 2021-06-14 23:24:14
 
 1. `__webpack_require__.f.remotes`：加载`remoteEntry`
 2. `__webpack_require__.f.consumes`：加载共享模块
-3. `__webpack_require__.f.j`：加载其他的异步模块
+3. `__webpack_require__.f.j`：加载其他的异步模块，这里的`j`大概表示`jsonp`，传统的`webpack`异步加载方式
+
+先说下共享模块，共享模块在`ModuleFederationPlugin`中声明以后，会被抽取成独立的`chunk`，类似我们使用`import(module)`，`module`也会成为`chunk`。
+
+如果共享模块声明为`eager`则不会做`chunk`的分离，而是保留到`main chunk`中，这样可以以同步的方式引入。
+
+但这么做会有问题，就算是被包含在`main chunk`里，但由于被声明为共享模块，模块的加载前会先`init`共享域`share scope`，假如`init`的时候也需要初始化`remoteEntry`，由于`remoteEntry`必然是以异步引入，导致`init`会返回`Promise`，连带这个声明了`eager`的模块在初始的时候也不能同步引入，然后就会报`Shared module is not available for eager consumption`这个错误（因为被认为初始化未完成）。
+
+
 
