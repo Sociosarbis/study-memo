@@ -29,6 +29,20 @@ date: 2021-06-14 23:24:14
 `remoteEntry`的名为`default`的`shareScope`将会作为与引入它的`chunk`（`importer`）的共享域。相同版本的共享模块，会进行覆盖，不会重复加载两个相同版本但不同`url`的文件。共享域中也可能`register`不同版本的模块，但假如把`singleton`设置为`true`，则只会使用第一个进行加载的有效版本的模块。这里的有效版本默认是取`package.json`中对应的依赖版本声明。另外如果两个版本都是有效版本，则优先使用版本号更大的那个。
 
 
+`remoteEntry`这个外部模块的入口文件，只会包含定义在`ModuleFederationPlugin`中`exposes`和`shared`中的`chunk`的引用，并不会执行打包`remote`应用配置中的`entry`文件。
 
+## ModuleFederationPlugin的配置说明
+
+### exposes
+
+`exposes`通常需要一对`key`和`value`。
+
+`key`是相对于这个`remote`应用的路径，例如应用`a`引用应用`b`的`Button`，如：
+```ts
+const Button = await import('b/Button')
+```
+则需要在`b`的`exposes`中加入`./Button`的`key`设为`./Button`（可以看成`b`是应用的跟目录，`path.join('./Button')`后就会等到`b/Button`）。
+
+而`value`则是想要`expose`的这个模块的入口文件的路径，格式规则与`entry`一样
 
 
