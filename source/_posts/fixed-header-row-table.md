@@ -40,4 +40,17 @@ date: 2021-08-28 22:23:39
 作为一个独立组件后，即便是写`template`也不会太冗余。
 
 ## 展示DEMO
-DEMO会在稍后放出...
+<iframe src="https://codesandbox.io/embed/trusting-zeh-jddoy?fontsize=14&hidenavigation=1&theme=dark"
+  style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
+  title="trusting-zeh-jddoy"
+  allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+  sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+></iframe>
+
+这个实现目前我感觉有以下不太完美的地方：
+1. 直接操作`DOM`
+2. 没有使用`table`元素
+3. 表格需要使用者指定宽高
+4. 当一轴滚动时，另一轴会同时出现微小的移动
+
+在实现过程中处理了`better-scroll`的一个bug，当设置是只允许同时出现一个方向的滚动时，它的惯性计算还是会出现两个方向，所以我作了个`touchEnd`时，让`startX`等于`x`或者`startY`等于`y`的处理
