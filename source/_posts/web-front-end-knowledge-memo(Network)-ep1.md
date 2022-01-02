@@ -26,10 +26,10 @@ date: 2019-11-03 22:59:38
 
 ### 格式示意图
 请求报文：
-![](css/images/http-request-format.png)
+![](http-request-format.png)
 
 响应报文：
-![](css/images/http-response-format.png)
+![](http-response-format.png)
 [图片来源](https://juejin.im/post/5ad4465d6fb9a028da7d0117)
 
 ### 常见的响应的状态码
@@ -74,7 +74,7 @@ date: 2019-11-03 22:59:38
 
 ![](https://latex.codecogs.com/png.latex?packet_%7Bn%20-%201%7D%20%3D%20header_%7Bn%20-%201%7D%20&plus;%20packet_%7Bn%7D)
 
-![](css/images/UDP_encapsulation.png)
+![](UDP_encapsulation.png)
 
 *本文内容大部分基于[5分钟让你明白HTTP协议]()https://juejin.im/post/5ad4465d6fb9a028da7d0117*
 

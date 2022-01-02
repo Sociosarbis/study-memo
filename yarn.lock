@@ -391,6 +391,14 @@ chalk@^4.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+chalk@^4.1.2:
+  version "4.1.2"
+  resolved "https://registry.npmmirror.com/chalk/download/chalk-4.1.2.tgz#aac4e2b7734a740867aeb16bf02aad556a1e7a01"
+  integrity sha1-qsTit3NKdAhnrrFr8CqtVWoeegE=
+  dependencies:
+    ansi-styles "^4.1.0"
+    supports-color "^7.1.0"
+
 chokidar@^3.0.0:
   version "3.5.1"
   resolved "https://registry.npmjs.org/chokidar/-/chokidar-3.5.1.tgz#ee9ce7bbebd2b79f49f304799d5468e31e14e68a"
@@ -871,6 +879,13 @@ hexo-generator-tag@^0.2.0:
   dependencies:
     hexo-pagination "0.0.2"
     object-assign "^4.0.1"
+
+hexo-hide-posts@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.npmmirror.com/hexo-hide-posts/download/hexo-hide-posts-0.2.0.tgz#3f28940243ed406e9a82f01831176eabefb57c2e"
+  integrity sha512-euTftMGCSYkhn/ARVuOv+XQIMNTUy5vCiutaY0qcN92NdZTfPG/wKCkeR3yE7LpMs/Y0aTuEp9F5NUVP/Dt6nA==
+  dependencies:
+    chalk "^4.1.2"
 
 hexo-i18n@^1.0.0:
   version "1.0.0"

@@ -19,10 +19,10 @@ date: 2019-11-02 21:56:06
     
     1. **contain**
 
-    ![contain](css/images/viewport-fit-contain.png)
+    ![contain](viewport-fit-contain.png)
     
     2. **cover**
 
-    ![cover](css/images/viewport-fit-contain.png)
+    ![cover](viewport-fit-contain.png)
 
     [图片来源](https://medium.com/@bobtung/%E9%9D%A2%E5%B0%8Diphone-x-web%E8%A8%AD%E8%A8%88%E5%B8%AB%E9%9C%80%E8%A6%81%E7%9F%A5%E9%81%93%E7%9A%84%E5%B9%BE%E5%80%8Bcss%E5%B1%AC%E6%80%A7-b7c03b314c6a)

@@ -41,7 +41,7 @@ location ~ ^/resource/(.*) {
 
 在某个博客的文章中找到了如下的文字说明：
 
-![nginx location配置优先级](/study-memo/assets/images/nginx-location-priority.jpg)
+![nginx location配置优先级](nginx-location-priority.jpg)
 
 说是优先用正则表达式最长的那个。那把`^/resource/(.*)`改成`/resource/teacher/3.0/(.*)`是不是就可以了呢？发现也是不行。
 
