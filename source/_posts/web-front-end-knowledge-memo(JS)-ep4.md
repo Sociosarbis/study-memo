@@ -75,5 +75,5 @@ function (...args) {
 4. `_super.call(this, name)`执行`Person`的构造函数
 
 5. `_createClass(Policeman, ...)`，
-`_createClass`除了接收`Policeman`构造函数外，还接受两个`{ key: string, ...attrs: Descriptor }[]`（`key`为属性名，其他作为属性`descriptor`）参数，第一个是`Policeman.prototype`的属性定义数组，第二个是`Policeman`（既静态）的属性定义数组。
+`_createClass`除了接收`Policeman`构造函数外，还接受两个`{ key: string, ...attrs: Descriptor }[]`（`key`为属性名，其他作为属性`descriptor`）参数，第一个是`Policeman.prototype`的属性定义数组，第二个是`Policeman`（即静态）的属性定义数组。
 值得注意的是，两者定义的属性都是不可枚举的`enumerable: false`
