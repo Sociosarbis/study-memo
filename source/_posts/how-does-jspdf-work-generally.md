@@ -73,7 +73,72 @@ date: 2022-02-23 22:24:51
     endstream
     ```
 
+### 插入图片（`jspdf.addImage`）
+1. 需先定义一个图片`obj`，如：
+
+        ```
+        19 0 obj
+        <<
+        /Type /XObject
+        /Subtype /Image
+        /Width 184
+        /Height 60
+        /ColorSpace /DeviceRGB
+        /BitsPerComponent 8
+        /DecodeParms <</Colors 3 /BitsPerComponent 8 /Columns 184>>
+        /SMask 20 0 R
+        /Length 33120
+        >>
+        stream
+        ...
+        endstream
+        endobj
+        ```
+2. 把图片`obj`注册到资源`obj`上，如下面的`I0`：
+
+        ```
+        2 0 obj
+        <<
+        /ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+        /Font <<
+        /F1 5 0 R
+        /F2 6 0 R
+        /F3 7 0 R
+        ...
+        >>
+        /XObject <<
+        /I0 19 0 R
+        >>
+        >>
+        endobj
+        ```
+3. 资源`obj`会被`page obj`的`Resources`属性引用，而`Contents`属性，这里是`4 0 obj`则是`page`实际要渲染的内容了：
+        
+        ```
+        3 0 obj
+        <</Type /Page
+        /Parent 1 0 R
+        /Resources 2 0 R
+        /MediaBox [0 0 793.3333333333332575 1122.6666666666665151]
+        /Contents 4 0 R
+        >>
+        ...
+        endobj
+        ```
+
+4. 当`page`有对应的图片资源后，就可以在绘图操作中引用，`q`对应`context.save`，`Q`对应`context.restore`，`cm`是`current matrix`表示位置大小变换，`Do`则是展示图片的操作：
+    ```
+    4 0 obj
+    ...
+    stream
+    ...
+    q
+    245.3333333333333144 0 0 80. 274. 1042.6666666666665151 cm
+    /I0 Do
+    Q
+    endstream
+    endobj
+    ```
+
+
 未完待续...
-
-
-
