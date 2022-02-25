@@ -155,6 +155,9 @@ date: 2022-02-23 22:24:51
 `Tf`: 文字大小
 
 `TL`: 行高
+
+`Tj`左边的操作数为`hex`格式的字符在字体文件中的序号，如果不是自定义字体，则是实际的字符如`(hello) Tj`
+
 ```
 BT
 /F15 21 Tf
@@ -163,6 +166,19 @@ BT
 322. 990.9333292643227651 Td
 <036b> Tj
 ET
+```
+
+字符到`unicode`的映射：如下就表示序号为3的字符对应的`unicode`为
+`0x0020`，也就是空格。`beginbfchar`左边的数字，表示映射的数量。
+`begincodespacerange`表示映射的序号范围。
+```
+1 begincodespacerange
+<0000><ffff>
+endcodespacerange
+19 beginbfchar
+<0003><0020>
+...
+endbfchar
 ```
 
 
