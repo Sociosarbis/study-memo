@@ -104,3 +104,9 @@ hide_posts:
   public_generators: []
   # Add "noindex" meta tag to prevent hidden posts from being indexed by search engines
   noindex: true
+# mermaid chart
+mermaid: ## mermaid url https://github.com/knsv/mermaid
+  enable: true  # default true
+  version: "9.1.2" # default v7.1.2
+  options:  # find more api options from https://github.com/knsv/mermaid/blob/master/src/mermaidAPI.js
+    startOnload: true
