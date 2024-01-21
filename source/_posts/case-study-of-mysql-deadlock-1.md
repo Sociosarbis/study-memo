@@ -3,7 +3,7 @@ title: 案例学习MySQL死锁之1
 tags:
   - mysql
   - deadlock
-date: 2023-19-36 19:37:01
+date: 2023-07-23 19:37:01
 ---
 ## 前言
 在满心欢喜把手头的工作做完，预想可以度过一个美好周末的周五夜晚，手机突然弹出消息通知，一看竟是同事转告我业务用的数据库的`CPU`负载告警，日志里赫然显示着这样的一些关键词：`Deadlock found when trying to get lock; try restarting transaction`和`WE ROLL BACK TRANSACTION(1)`。`deadlock`听起来很可怕，仿佛死循环把程序无止境地阻塞住一样。关于数据库锁，我可以说是一无所知，所以为了解决实际的工作问题和补全相关知识，开始了这次学习。
@@ -51,23 +51,23 @@ INSERT INTO `a` (`id`,`bId`,`cId`) VALUES(DEFAULT,1,1);
 `a`跟`b`和`c`都是`manyToOne`的关系，这时表数据分别是：
 * `a`
 
-  id|bId|cId
-  -|-|-
-  1|1|1
+id|bId|cId
+-|-|-
+1|1|1
 
 * b
 
-  id|
-  -|
-  1
-  2
+id|
+-|
+1|
+2|
 
 * c 
 
-  id|
-  -|
-  1
-  2
+id|
+-|
+1|
+2|
 
 
 #### 复现步骤
