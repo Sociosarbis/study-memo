@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    /* 语言和环境 */
+    "target": "ES2022" /* 编译后的 JavaScript 目标版本 */,
+    "lib": ["ES2022"] /* 包含的库文件 */,
+    "module": "NodeNext" /* 模块系统 */,
+    "moduleResolution": "NodeNext" /* 模块解析策略 */,
+
+    /* 输出目录 */
+    "outDir": "./dist" /* 编译输出目录 */,
+    "rootDir": "./src" /* 源代码根目录 */,
+
+    /* 严格类型检查 */
+    "strict": true /* 启用所有严格类型检查 */,
+
+    /* 模块互操作性 */
+    "esModuleInterop": true /* 支持 CommonJS 模块导入 */,
+    "allowSyntheticDefaultImports": true /* 允许默认导入 */,
+    "forceConsistentCasingInFileNames": true /* 文件名大小写一致 */,
+
+    /* 其他选项 */
+    "skipLibCheck": true /* 跳过库文件类型检查 */,
+    "resolveJsonModule": true /* 支持导入 JSON 文件 */,
+    "declaration": true /* 生成类型声明文件 */,
+    "declarationMap": true /* 生成声明文件的 source map */,
+    "sourceMap": true /* 生成 source map */,
+    "removeComments": false /* 保留注释 */,
+    "noEmitOnError": true /* 出错时不输出文件 */,
+
+    /* Node.js 特定 */
+    "types": ["node"] /* 包含 Node.js 类型定义 */,
+    "experimentalDecorators": true /* 启用装饰器（如需要） */,
+    "emitDecoratorMetadata": true /* 发出装饰器元数据（如需要） */
+  },
+  "include": ["src/**/*"] /* 包含的源文件 */,
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ] /* 排除的文件 */
+}
